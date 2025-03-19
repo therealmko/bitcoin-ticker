@@ -110,6 +110,38 @@ APIs Used:
 
 ### Creating Custom Applets
 You can create your own custom applets by subclassing BaseApplet. Add your new applet to applet_manager.py and the SRC list in the makefile.
+```from system_applets.base_applet import BaseApplet
+from data_manager import DataManager
+
+class CustomApplet(BaseApplet):
+    TTL = 120  # Cache time in seconds
+    
+    def __init__(self, screen_manager, data_manager: DataManager):
+        super().__init__('custom_applet', screen_manager)
+        self.data_manager = data_manager
+        self.api_url = "https://your-api-endpoint.com/data"
+        self.drawn = False
+        self.register()
+        
+    def register(self):
+        self.data_manager.register_endpoint(self.api_url, self.TTL)
+        
+    async def draw(self):
+        if self.drawn:
+            return
+            
+        self.screen_manager.clear()
+        self.screen_manager.draw_header("Custom Data")
+        
+        # Get data from cache
+        self.data = self.data_manager.get_cached_data(self.api_url)
+        
+        # Draw your custom display
+        self.screen_manager.draw_centered_text("Your Data Here")
+        
+        self.screen_manager.update()
+        self.drawn = True
+```
 
 ### Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
