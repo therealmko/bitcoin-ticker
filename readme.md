@@ -31,8 +31,7 @@ To build your own Satoshi Radio Ticker, you'll need:
 
 ## 🔥 Quickstart
 
-### Option 1: Quick Setup with UF2 File
-
+### Hardeware setup
 1. Download the latest `satoshi_radio_ticker.uf2` file from the releases section.
 2. Connect your Raspberry Pi Pico 2 W to your computer while holding the BOOTSEL button.
 3. When the Pico appears as a USB drive on your computer, release the button.
@@ -44,8 +43,14 @@ To build your own Satoshi Radio Ticker, you'll need:
 9. Power the Pico with a Micro USB cable to test if the display and data fetching work correctly.
 10. Once everything is working, add the laser-cut acrylic top screen to complete the build.
 
-## Using the Ticker
-
+### Network Setup
+1. Power on the ticker.
+2. When the setup screen appears, connect to the ticker's WiFi network. Use the SSID (SR_Ticker) and password displayed on the screen to connect from your phone or laptop.
+3. After connecting, either scan the QR code or enter the IP address shown on the screen into your web browser.
+4. Enter your local network credentials (SSID and password) and click "Add Network."
+5. Optional: Select which applets (screens) you want to display. If you make any changes to the applets, be sure to click "Save Applets."
+6. When you've finished configuration, click "Reboot Device."
+7. If the ticker becomes unresponsive during reboot, perform a hard reboot by disconnecting and reconnecting the USB cable.
 
 
 ## 📡 WiFi Configuration
