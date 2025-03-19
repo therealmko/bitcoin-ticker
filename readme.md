@@ -52,18 +52,24 @@ To build your own Satoshi Radio Ticker, you'll need:
 6. When you've finished configuration, click "Reboot Device."
 7. If the ticker becomes unresponsive during reboot, perform a hard reboot by disconnecting and reconnecting the USB cable.
 
+### Pro-tips
+- To access the Settings page after initial setup, simply browse to the ticker's IP address on your local network. There's no need to connect directly to the ticker.
+- You can add multiple WiFi networks! This makes it convenient to connect the ticker to both your home network and your phone's hotspot.
+- You can fork the code and add your own customizations! After you're done, just use the makefile to upload your modified code to the Pi. See the development section below for details.
+- Need to reset the Raspberry Pi? There is a whole in the enclosure. Just use a paperclip, you can easily reach the BOOTSEL button.
 
-## 📡 WiFi Configuration
+## 🖨️ 3D Print Instructions
+You can print the enclosure yourself! It's straightforward. Choose between the 2.0" or 2.8" version, using the STL files provided in the assets folder. For the 2.8" version, we've also included a 3MF file that you can import into your preferred 3D printing software. This file features our Satoshi Radio Logo. The print settings I used are listed below, but feel free to experiment with your own settings.
 
-The ticker needs internet access to fetch Bitcoin data. Create a `.env` file with your network credentials:
+### Print Settings
+- Layer Height: 0.20mm (standard)
+- Outer Wall Speed: 100mm/s
+- Supports: Enabled
+- Cooling: Disabled for first 3 layers
+- Material: ESUN E-PLA+ Matte
 
-```
-SSID_1=your_wifi_name
-PASSWORD_1=your_wifi_password
-# You can add multiple network configurations
-SSID_2=second_network_name
-PASSWORD_2=second_network_password
-```
+### Laser Cutting Instructions
+The most difficult part to complete at home. All necessary files and measurements are available in the assets folder. My recommendation is to locate a laser cutting service in your area or place an order online. You'll need translucent black acrylic with 3mm thickness. While the sticker adds a nice finishing touch, it's optional rather than required.
 
 ## 🔨 Physical Assembly
 
@@ -85,18 +91,6 @@ If you need to reset your Pico W:
 2. Reconnect while holding the BOOTSEL button
 3. Release the button after 2 seconds
 
-### LED Status Indicators
-
-- Yellow: Fetching data from the internet
-- Red: Error occurred
-- Green: Successfully retrieved data
-- Off: Idle state
-
-### Common Issues
-
-- **No WiFi Connection**: Check your network credentials in the `.env` file
-- **Screen Doesn't Update**: Try resetting the device
-- **Display Shows Error Message**: Check the error text and verify internet connectivity
 
 ## 🆘 Support
 
