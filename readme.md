@@ -1,18 +1,20 @@
 ![Satoshi Radio Ticker](https://i.postimg.cc/DzDmwdKK/ticker-landscape.webp "Satoshi Radio Ticker")
-# 📻 Satoshi Radio Ticker
+# 📻 Satoshi Radio Bitcoin Ticker
 
 Welcome to the Satoshi Radio Ticker project! This compact, desk-friendly device keeps you updated on Bitcoin's price and blockchain status at a glance. Built with affordable, accessible components, it's perfect for crypto enthusiasts who want real-time information without constantly checking their phones.
 
-A Bitcoin price and blockchain information display built with Raspberry Pi Pico W and Pimoroni Display Pack 2.8.
+This is a fully open source project that you can build yourself! We've designed it to be accessible for makers of all skill levels using readily available components. Follow our guide and you'll have your own Bitcoin ticker up and running in no time - customize it, modify it, and make it your own!
 
-![Satoshi Radio Ticker](https://via.placeholder.com/400x300 "Satoshi Radio Ticker")
+A Bitcoin price and blockchain information display built with Raspberry Pi Pico W and Pimoroni Display Pack 2.8.
 
 ## ✨ Features
 
 - 💰 Real-time Bitcoin price display (BTC/USD)
-- ⛓️ Current blockchain height display
+- ⛓️ Current Bitcoin blockchain height display
+- 📊 Bitcoin Mempool status
+- 🕰️ Moscow Time display
 - 📶 WiFi connectivity for live data updates
-- 🔄 Automatic applet cycling
+- 🔄 Automatic screen cycling
 - 🚦 RGB LED status indicator
 - ⚡ Low power consumption
 
@@ -20,47 +22,31 @@ A Bitcoin price and blockchain information display built with Raspberry Pi Pico 
 
 To build your own Satoshi Radio Ticker, you'll need:
 
-- Raspberry Pi Pico W
-- Pimoroni Display Pack 2.8
-- 3D printed case (files provided in this repo)
+- [Raspberry Pi Pico 2 WH](https://shop.pimoroni.com/products/raspberry-pi-pico-2-w?variant=54852253024635)
+- [Pimoroni Display Pack 2.8](https://shop.pimoroni.com/products/pico-display-pack-2-8?variant=42047194005587) (or 2.0)
+- 3D printed case (files provided in this repo under "assets")
 - 4x M2 x 5mm bolts
-- Laser cut acrylic (3mm thick, transparent black)
-- Vinyl sticker for the frame
-- Double-sided tape for assembly
+- Laser cut acrylic (files provided in this repo under "assets")
+- [Angled Micro USB cable](https://www.amazon.nl/PremiumCord-USB-verbindingskabel-datakabel-ku2m1f-90/dp/B07NSQ5859)
 
-## 💻 Software Setup
+## 🔥 Quickstart
 
 ### Option 1: Quick Setup with UF2 File
 
 1. Download the latest `satoshi_radio_ticker.uf2` file from the releases section.
-2. Connect your Raspberry Pi Pico W to your computer while holding the BOOTSEL button.
-3. The Pico will appear as a USB drive.
-4. Copy the `satoshi_radio_ticker.uf2` file to the Pico drive.
-5. The Pico will automatically reboot and run the ticker software.
+2. Connect your Raspberry Pi Pico 2 W to your computer while holding the BOOTSEL button.
+3. When the Pico appears as a USB drive on your computer, release the button.
+4. Drag and drop the `satoshi_radio_ticker.uf2` file onto the Pico drive.
+5. The Pico will automatically disconnect, reboot, and start running the ticker software.
+6. Print the 3D enclosure files from the "assets" folder.
+7. Carefully place the Pico in the enclosure and secure it with the four M2 x 5mm screws.
+8. Connect the Pimoroni Display Pack to the Pico, ensuring correct alignment of pins (don't press too hard).
+9. Power the Pico with a Micro USB cable to test if the display and data fetching work correctly.
+10. Once everything is working, add the laser-cut acrylic top screen to complete the build.
 
-### Option 2: Manual Setup
+## Using the Ticker
 
-1. Install [MicroPython](https://micropython.org/download/RPI_PICO_W/) on your Pico W if not already installed.
-2. Clone this repository:
-   ```
-   git clone https://github.com/yourusername/satoshi_radio_ticker.git
-   ```
-3. Create a `.env` file in the `src` directory with your WiFi credentials:
-   ```
-   SSID_1=your_wifi_name
-   PASSWORD_1=your_wifi_password
-   # Add additional networks if needed
-   SSID_2=backup_wifi_name
-   PASSWORD_2=backup_wifi_password
-   ```
-4. Install the required tools:
-   ```
-   pip install -r src/requirements.txt
-   ```
-5. Upload the code using the makefile:
-   ```
-   make upload
-   ```
+
 
 ## 📡 WiFi Configuration
 
