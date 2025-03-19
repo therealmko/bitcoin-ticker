@@ -71,18 +71,54 @@ You can print the enclosure yourself! It's straightforward. Choose between the 2
 ### Laser Cutting Instructions
 The most difficult part to complete at home. All necessary files and measurements are available in the assets folder. My recommendation is to locate a laser cutting service in your area or place an order online. You'll need translucent black acrylic with 3mm thickness. While the sticker adds a nice finishing touch, it's optional rather than required.
 
-## 🔨 Physical Assembly
+## 🔨 Developtment
+### Project Structure
+```src/
+├── applets/                # Bitcoin information displays
+│   ├── bitcoin_applet.py   # BTC price display
+│   ├── block_height_applet.py
+│   ├── fee_applet.py
+│   ├── halving_countdown_applet.py
+│   └── moscow_time_applet.py
+├── system_applets/         # Core system applets
+│   ├── ap_applet.py        # Access point configuration screen
+│   ├── base_applet.py      # Base class for all applets
+│   ├── error_applet.py     # Error display screen
+│   └── splash_applet.py    # Boot splash screen
+├── applet_manager.py       # Manages applet lifecycle
+├── data_manager.py         # Handles API requests and caching
+├── main.py                 # Application entry point
+├── screen_manager.py       # Display abstraction
+├── urllib_urequest.py      # HTTP client
+├── web_server.py           # Configuration web interface
+└── wifi_manager.py         # Network connection manager
+```
 
-1. 3D print the case (004_CASE_TICKER_PICO_2.8).
-2. Mount the Raspberry Pi Pico W in the case using the four M2 x 5mm bolts.
-3. Attach the Pimoroni Display Pack to the Pico.
-4. Apply the double-sided tape (005_TAPE_TICKER_PICO_2.8) to secure the display.
-5. Place the vinyl sticker (003_VINYL_TICKER_PICO_2.8) over the front frame.
-6. Add the acrylic cover (002_ACRYL_TICKER_PICO_2.8) to complete the assembly.
+### Dependencies
+- MicroPython (tested with Pimoroni MicroPython distribution)
 
-Refer to the exploded view diagram in the repository for detailed assembly guidance.
+Libraries:
+- picographics - Graphics library for the display
+- network - Wi-Fi functionality
+- uasyncio - Asynchronous I/O
+- jpegdec - JPEG image support
+- json - JSON parsing
 
-## 🔍 Troubleshooting
+APIs Used:
+- Binance API: For Bitcoin price data
+- Mempool.space API: For blockchain statistics (block height, fees)
+
+### Creating Custom Applets
+You can create your own custom applets by subclassing BaseApplet. Add your new applet to applet_manager.py and the SRC list in the makefile.
+
+### Contributing
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (git checkout -b feature/amazing-feature)
+3. Commit your changes (git commit -m 'Add some amazing feature')
+4. Push to the branch (git push origin feature/amazing-feature)
+5. Open a Pull Request
 
 ### Resetting the Pico
 
