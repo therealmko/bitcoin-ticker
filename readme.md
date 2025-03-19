@@ -71,7 +71,7 @@ You can print the enclosure yourself! It's straightforward. Choose between the 2
 ### Laser Cutting Instructions
 The most difficult part to complete at home. All necessary files and measurements are available in the assets folder. My recommendation is to locate a laser cutting service in your area or place an order online. You'll need translucent black acrylic with 3mm thickness. While the sticker adds a nice finishing touch, it's optional rather than required.
 
-## 🔨 Developtment
+## 🔨 Development
 ### Project Structure
 ```src/
 ├── applets/                # Bitcoin information displays
@@ -142,6 +142,78 @@ class CustomApplet(BaseApplet):
         self.screen_manager.update()
         self.drawn = True
 ```
+### Basic Commands
+### Check Device ID
+```bash
+make devices
+```
+This command will show the USB device ID of your connected Pico.
+
+### Check Available Devices
+```bash
+make devices
+```
+This will list available USB devices. Look for something like `/dev/tty.usbmodem101`
+
+### Upload Folders
+```bash
+make create_folders
+```
+This command uploads the folder structure.
+
+### Upload Code
+```bash
+make upload
+```
+This command uploads all source files to the Pico. Watch the terminal for progress.
+
+### Run the Code
+```bash
+make run
+```
+This executes the main program on the Pico.
+
+### Upload and Run
+```bash
+make all
+```
+This combines both upload and run commands.
+
+### Monitor Serial Output
+```bash
+make serial
+```
+Opens a serial monitor to view device output. Use `Ctrl-A Ctrl-\` to exit.
+
+### Adding New Files
+
+When adding new Python files to the project:
+
+1. Create your new file in the appropriate directory under `/src/`
+2. Add the file path to the `SRC` list in the makefile:
+   ```makefile
+   SRC = src/main.py \
+         src/your_new_file.py \
+         ...
+   ```
+3. Run `make upload` to include the new file in the next upload
+
+Note: The file path in `SRC` should be relative to the project root and use forward slashes.
+
+### Single File Upload
+
+To upload a single file instead of the entire project, you can use the `ampy` tool directly:
+
+```bash
+ampy put src/path/to/file.py destination/path/file.py
+```
+
+Example:
+```bash
+ampy put src/applets/bitcoin_applet.py applets/bitcoin_applet.py
+```
+
+This is useful when making small changes and wanting to test quickly without uploading the entire project.
 
 ### Contributing
 Contributions are welcome! Please feel free to submit a Pull Request.
