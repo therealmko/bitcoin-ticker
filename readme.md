@@ -73,7 +73,8 @@ The most difficult part to complete at home. All necessary files and measurement
 
 ## 🔨 Development
 ### Project Structure
-```src/
+```
+src/
 ├── applets/                # Bitcoin information displays
 │   ├── bitcoin_applet.py   # BTC price display
 │   ├── block_height_applet.py
@@ -110,7 +111,8 @@ APIs Used:
 
 ### Creating Custom Applets
 You can create your own custom applets by subclassing BaseApplet. Add your new applet to applet_manager.py and the SRC list in the makefile.
-```from system_applets.base_applet import BaseApplet
+```
+from system_applets.base_applet import BaseApplet
 from data_manager import DataManager
 
 class CustomApplet(BaseApplet):
@@ -220,9 +222,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 1. Fork the repository
 2. Create your feature branch (git checkout -b feature/amazing-feature)
-3. Commit your changes (git commit -m 'Add some amazing feature')
-4. Push to the branch (git push origin feature/amazing-feature)
-5. Open a Pull Request
+3. Add your changes (git add {file})
+4. Commit your changes (git commit -m 'Add some amazing feature')
+5. Push to the branch (git push origin feature/amazing-feature)
+6. Open a Pull Request
 
 ### Resetting the Pico
 
