@@ -231,8 +231,10 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 If you need to reset your Pico W:
 1. Disconnect power from the device
-2. Reconnect while holding the BOOTSEL button
+2. Connect the ticker to your computer while holding the BOOTSEL button
 3. Release the button after 2 seconds
+4. Upload firmware again (see quickstart section)
+
 
 
 ## 🆘 Support
@@ -241,4 +243,4 @@ If you have questions or need help, please open an issue on the GitHub repositor
 
 ## 📜 License
 
-This project is released under the Open Source Non-Commercial License. See the LICENSE file for details.
+This project is licensed under the [Creative Commons Attribution-NonCommercial 4.0 International License](https://creativecommons.org/licenses/by-nc/4.0/). Please refer to the LICENSE file for further details.
