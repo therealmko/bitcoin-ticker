@@ -30,6 +30,7 @@ To build your own Satoshi Radio Ticker, you'll need:
 - [Angled Micro USB cable](https://www.amazon.nl/PremiumCord-USB-verbindingskabel-datakabel-ku2m1f-90/dp/B07NSQ5859)
 
 ## 🔥 Quickstart
+![Satoshi Radio Ticker](https://i.postimg.cc/DzDmwdKK/ticker-landscape.webp](https://i.postimg.cc/SKg2qwmT/001-EXPLODED-VIEW-TICKER-2-8-22.webp "Satoshi Radio Ticker Exploded View")
 
 ### Hardeware setup
 1. Download the latest `satoshi_radio_ticker.uf2` file from the releases section.
