@@ -33,10 +33,10 @@ To build your own Satoshi Radio Ticker, you'll need:
 <img src="https://i.postimg.cc/SKg2qwmT/001-EXPLODED-VIEW-TICKER-2-8-22.webp" alt="Exploded View Ticker" title="Exploded View Ticker" width="500" />
 
 ### Hardeware setup
-1. Download the latest `satoshi_radio_ticker.uf2` file from the releases section.
+1. Download the latest `bitcoin-ticker.uf2` file from the releases section.
 2. Connect your Raspberry Pi Pico 2 W to your computer while holding the BOOTSEL button.
 3. When the Pico appears as a USB drive on your computer, release the button.
-4. Drag and drop the `satoshi_radio_ticker.uf2` file onto the Pico drive.
+4. Drag and drop the `bitcoin-ticker.uf2` file onto the Pico drive.
 5. The Pico will automatically disconnect, reboot, and start running the ticker software.
 6. Print the 3D enclosure files from the "assets" folder.
 7. Carefully place the Pico in the enclosure and secure it with the four M2 x 5mm screws.
