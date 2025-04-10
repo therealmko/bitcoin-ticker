@@ -8,6 +8,7 @@ from system_applets.splash_applet import SplashApplet
 from system_applets.error_applet import ErrorApplet
 from applets import (
     bitcoin_applet,
+    bitcoin_eur_applet,
     block_height_applet,
     fee_applet,
     moscow_time_applet,
@@ -48,6 +49,7 @@ class AppletManager:
 
         self.all_applets = {
             "bitcoin_applet": bitcoin_applet.bitcoin_applet,
+            "bitcoin_eur_applet": bitcoin_eur_applet.bitcoin_eur_applet,
             "block_height_applet": block_height_applet.mempool_applet,
             "fee_applet": fee_applet.fee_applet,
             "moscow_time_applet": moscow_time_applet.moscow_time_applet,
