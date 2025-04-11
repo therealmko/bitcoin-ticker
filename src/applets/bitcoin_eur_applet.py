@@ -4,13 +4,13 @@ from data_manager import DataManager
 from micropython import const
 import gc
 
-class bitcoin_applet(BaseApplet):
+class bitcoin_eur_applet(BaseApplet):
     TTL = const(120)
 
     def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
-        super().__init__('bitcoin_applet', screen_manager)
+        super().__init__('bitcoin_eur_applet', screen_manager)
         self.data_manager = data_manager
-        self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+        self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCEUR"
         self.drawn = False
         self.register()
 
@@ -33,7 +33,7 @@ class bitcoin_applet(BaseApplet):
             return
 
         self.screen_manager.clear()
-        self.screen_manager.draw_header("Bitcoin US Dollar Price")
+        self.screen_manager.draw_header("Bitcoin Euro Price")
         self.data = self.data_manager.get_cached_data(self.api_url)
 
         print("Initial cached data:", self.data)
@@ -55,12 +55,12 @@ class bitcoin_applet(BaseApplet):
 
             if price:
                 try:
-                    usd_price = float(price)
+                    eur_price = float(price)
                     change = float(change_percent)
 
                     # Draw the label, price and change
-                    self.screen_manager.draw_centered_text("BTC/USD", scale=3, y_offset=-60)  # Label above price
-                    self.screen_manager.draw_centered_text(f"${int(usd_price):,}")  # Price with default scale=8 and thousand separator
+                    self.screen_manager.draw_centered_text("BTC/EUR", scale=3, y_offset=-60)  # Label above price
+                    self.screen_manager.draw_centered_text(f"E{int(eur_price):,}")  # Price with default scale=8 and thousand separator
                     # Draw the change percentage
                     change_text = f"24h change: {change:+.2f}%"
                     text_width = self.screen_manager.display.measure_text(change_text, scale=2)

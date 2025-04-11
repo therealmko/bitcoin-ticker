@@ -13,7 +13,8 @@ SRC =  						src/main.py \
 							src/web_server.py \
 							src/system_applets/base_applet.py \
 							src/applets/bitcoin_applet.py \
-			  			src/urllib_urequest.py \
+							src/applets/bitcoin_euro_applet.py \
+			  				src/urllib_urequest.py \
 							src/applets/block_height_applet.py \
 							src/applets/halving_countdown_applet.py \
 							src/applets/fee_applet.py \
