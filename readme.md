@@ -10,6 +10,7 @@ A Bitcoin price and blockchain information display built with Raspberry Pi Pico 
 ## ✨ Features
 
 - 💰 Real-time Bitcoin price display (BTC/USD)
+- 💰 Real-time Bitcoin price display (BTC/EUR)
 - ⛓️ Current Bitcoin blockchain height display
 - 📊 Bitcoin Mempool status
 - 🕰️ Moscow Time display
@@ -76,24 +77,26 @@ The most difficult part to complete at home. All necessary files and measurement
 ### Project Structure
 ```
 src/
-├── applets/                # Bitcoin information displays
-│   ├── bitcoin_applet.py   # BTC price display
+├── applets/                    # Bitcoin information displays
+│   ├── bitcoin_applet.py       # BTC / Dollar price display
+│   ├── bitcoin_eur_applet.py   # BTC / Euro price display
 │   ├── block_height_applet.py
 │   ├── fee_applet.py
 │   ├── halving_countdown_applet.py
 │   └── moscow_time_applet.py
-├── system_applets/         # Core system applets
-│   ├── ap_applet.py        # Access point configuration screen
-│   ├── base_applet.py      # Base class for all applets
-│   ├── error_applet.py     # Error display screen
-│   └── splash_applet.py    # Boot splash screen
-├── applet_manager.py       # Manages applet lifecycle
-├── data_manager.py         # Handles API requests and caching
-├── main.py                 # Application entry point
-├── screen_manager.py       # Display abstraction
-├── urllib_urequest.py      # HTTP client
-├── web_server.py           # Configuration web interface
-└── wifi_manager.py         # Network connection manager
+├── system_applets/             # Core system applets
+│   ├── ap_applet.py            # Access point configuration screen
+│   ├── base_applet.py          # Base class for all applets
+│   ├── error_applet.py         # Error display screen
+│   └── splash_applet.py        # Boot splash screen
+├── applet_manager.py           # Manages applet lifecycle
+├── data_manager.py             # Handles API requests and caching
+├── main.py                     # Application entry point
+├── screen_manager.py           # Display abstraction
+├── urllib_urequest.py          # HTTP client
+├── web_server.py               # Configuration web interface
+└── wifi_manager.py             # Network connection manager
+└── config.py                   # Utility to help manage configurations
 ```
 
 ### Dependencies
