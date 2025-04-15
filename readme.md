@@ -8,7 +8,7 @@ This is a fully open source project that you can build yourself! We've designed 
 A Bitcoin price and blockchain information display built with Raspberry Pi Pico W and Pimoroni Display Pack 2.8.
 
 ## ✨ Features
-
+ 
 - 💰 Real-time Bitcoin price display (BTC/USD)
 - 💰 Real-time Bitcoin price display (BTC/EUR)
 - ⛓️ Current Bitcoin blockchain height display
