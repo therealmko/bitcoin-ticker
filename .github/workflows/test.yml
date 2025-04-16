@@ -1,8 +1,14 @@
 name: Test Workflow
 
 on:
-  push:
-  workflow_dispatch:
+  release:
+    types: [published]
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+  workflow_dispatch: 
 
 jobs:
   build:
@@ -71,7 +77,7 @@ jobs:
                   -DMICROPY_BOARD="$BOARD" \
                   -DCMAKE_C_COMPILER_LAUNCHER=ccache \
                   -DCMAKE_CXX_COMPILER_LAUNCHER=ccache \
-                  -DPython_EXECUTABLE=$(which python3)
+                  -DPython_EXECUTABLE=$(which python3) # Need to override this because the python executable was not found
           }
           micropython_version
           ci_cmake_configure ${{ matrix.name }}
