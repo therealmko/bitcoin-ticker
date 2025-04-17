@@ -83,7 +83,8 @@ class AsyncWebServer:
     async def handle_get_config(self, request_lines, writer):
         """Handle GET request for configuration settings"""
         config = {
-            "applet_duration": self.config_manager.get_applet_duration()
+            "applet_duration": self.config_manager.get_applet_duration(),
+            "timezone_offset": self.config_manager.get_timezone_offset()
         }
         response_body = json.dumps(config)
         response = (
@@ -151,16 +152,22 @@ class AsyncWebServer:
         try:
             params = json.loads(body)
             applet_duration = params.get("applet_duration", 10)
+            timezone_offset = params.get("timezone_offset", 0)
             
-            # Update the duration with validation
+            # Update the configs with settings
             actual_duration = self.config_manager.set_applet_duration(applet_duration)
+            actual_offset = self.config_manager.set_timezone_offset(timezone_offset)
             
-            print(f"[AsyncWebServer] Updated applet duration: {actual_duration}")
+            print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}")
+
             response = (
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: application/json\r\n"
                 "Connection: close\r\n\r\n" +
-                json.dumps({"applet_duration": actual_duration})
+                json.dumps({
+                    "applet_duration": actual_duration,
+                    "timezone_offset": actual_offset
+                })
             )
         except Exception as e:
             print(f"[AsyncWebServer] Error updating config: {e}")
@@ -258,6 +265,7 @@ class AsyncWebServer:
         
         # Get current applet duration
         applet_duration = self.config_manager.get_applet_duration()
+        timezone_offset = self.config_manager.get_timezone_offset()
         
         html = f"""
     <!DOCTYPE html>
@@ -424,6 +432,11 @@ class AsyncWebServer:
         <label for="applet-duration" style="display: block; margin-bottom: 5px;">Applet Duration (seconds):</label>
         <input type="number" id="applet-duration" name="applet_duration" min="3" max="60" step="1" value="{applet_duration}" required>
         <p style="font-size: 12px; color: #ccc;">Duration must be between 3 and 60 seconds</p>
+    
+        <label for="timezone-offset" style="display: block; margin-top: 15px; margin-bottom: 5px;">Timezone Offset (hours from UTC):</label>
+        <input type="number" id="timezone-offset" name="timezone_offset" min="-12" max="14" step="1" value="{timezone_offset}" required>
+        <p style="font-size: 12px; color: #ccc;">Valid values between -12 and +14</p>
+    
         <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
     </form>
 
@@ -526,6 +539,7 @@ async function fetchConfig() {{
     if (response.ok) {{
       const config = await response.json();
       document.getElementById('applet-duration').value = config.applet_duration;
+      document.getElementById('timezone-offset').value = config.timezone_offset;
     }} else {{
       alert('Failed to fetch configuration');
     }}
@@ -638,7 +652,8 @@ async function saveConfig(event) {{
   const form = document.getElementById('config-form');
   const formData = new FormData(form);
   const data = {{
-    applet_duration: parseInt(formData.get('applet_duration'), 10)
+    applet_duration: parseInt(formData.get('applet_duration'), 10),
+    timezone_offset: parseInt(formData.get('timezone_offset'), 10)
   }};
   
   try {{
