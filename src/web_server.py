@@ -159,6 +159,7 @@ class AsyncWebServer:
             actual_offset = self.config_manager.set_timezone_offset(timezone_offset)
             
             print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}")
+
             response = (
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: application/json\r\n"
@@ -167,7 +168,6 @@ class AsyncWebServer:
                     "applet_duration": actual_duration,
                     "timezone_offset": actual_offset
                 })
-                  
             )
         except Exception as e:
             print(f"[AsyncWebServer] Error updating config: {e}")

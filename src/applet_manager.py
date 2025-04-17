@@ -125,7 +125,6 @@ class AppletManager:
         self.current_applet.start()
 
         applet_duration = max(3, self.config_manager.get_applet_duration())
-        #applet_duration = self.config_manager.get_applet_duration()
         print(f"[AppletManager] Using applet duration: {applet_duration} seconds")
 
         self.running = True
@@ -192,4 +191,3 @@ class AppletManager:
         error_applet = ErrorApplet(self.screen_manager, error_message)
         await self._run_applet(error_applet, is_system_applet=True)
         self.running = False
-
