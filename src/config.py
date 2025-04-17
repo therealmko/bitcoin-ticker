@@ -4,14 +4,15 @@ import os
 class ConfigManager:
     """
     Manages configuration settings for the Bitcoin Ticker application.
-    Currently supports applet duration configuration.
+    Currently supports applet duration and timezone offset configuration.
     """
     
     def __init__(self):
         self.config = {}
         self.filename = "config.json"
         self.defaults = {
-            "applet_duration": 10  # Default duration in seconds
+            "applet_duration": 10,  # Default duration in seconds
+            "timezone_offset": 0     # Default timezone offset (UTC)
         }
         self.load_config()
     
@@ -54,3 +55,27 @@ class ConfigManager:
         except (ValueError, TypeError):
             # If conversion fails, return the current value
             return self.get_applet_duration()
+    
+    def get_timezone_offset(self):
+        """Get the current timezone offset from UTC in hours"""
+        return self.config.get("timezone_offset", self.defaults["timezone_offset"])
+    
+    def set_timezone_offset(self, offset):
+        """
+        Set and validate the timezone offset
+        
+        :param offset: Offset in hours from UTC (clamped between -12 and +14)
+        :return: The actual offset that was set after validation
+        """
+        try:
+            # Convert to integer and clamp between -12 and +14 hours
+            # (Valid timezone ranges from UTC-12 to UTC+14)
+            offset = int(offset)
+            offset = max(-12, min(14, offset))
+            
+            self.config["timezone_offset"] = offset
+            self.save_config()
+            return offset
+        except (ValueError, TypeError):
+            # If conversion fails, return the current value
+            return self.get_timezone_offset()

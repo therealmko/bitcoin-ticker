@@ -191,4 +191,3 @@ class AppletManager:
         error_applet = ErrorApplet(self.screen_manager, error_message)
         await self._run_applet(error_applet, is_system_applet=True)
         self.running = False
-

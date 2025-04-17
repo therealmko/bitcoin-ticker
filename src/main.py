@@ -8,6 +8,7 @@ from wifi_manager import WiFiManager
 from web_server import AsyncWebServer
 from applet_manager import AppletManager
 from system_applets import ap_applet
+from config import ConfigManager
 
 RGBLED(6, 7, 8).set_rgb(0, 0, 0)
 
@@ -18,7 +19,8 @@ async def main() -> None:
     and starts the web server. It keeps an asynchronous loop alive to service
     other tasks such as applets and data retrieval.
     """
-    screen_manager = ScreenManager()
+    config_manager = ConfigManager()
+    screen_manager = ScreenManager(config_manager=config_manager)
     data_manager = DataManager()
     wifi_manager = WiFiManager()
 
