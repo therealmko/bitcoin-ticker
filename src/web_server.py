@@ -3,6 +3,7 @@ import applet_manager
 import uasyncio as asyncio
 import json
 import wifi_manager  # Your custom WiFiManager module
+from config import ConfigManager  # Added import for ConfigManager
 
 def safe_convert_to_int(value, default=0) -> int:
     """
@@ -28,6 +29,9 @@ class AsyncWebServer:
         self.wifi_manager = wifi_manager
         self.applet_manager = applet_manager
         self.ip_address = self.wifi_manager.ip
+        
+        # Initialize config manager
+        self.config_manager = ConfigManager()
 
         # Example: define your known applets
         self.applets = self.applet_manager.get_applets_list()
@@ -35,13 +39,16 @@ class AsyncWebServer:
             "GET /": self.handle_root,  # Serve the main HTML page
             "GET /networks": self.handle_get_networks,
             "GET /applets": self.handle_get_applets,
+            "GET /config": self.handle_get_config,  # New route to fetch config
             "POST /submit": self.handle_submit_network,
             "POST /move_up": self.handle_move_up,
             "POST /move_down": self.handle_move_down,
             "POST /remove": self.handle_remove_network,
             "POST /select_applets": self.handle_select_applets,
+            "POST /update_config": self.handle_update_config,  # New route to update config
             "POST /reboot": self.handle_reboot,
         }
+        
     async def handle_root(self, request_lines, writer):
         html = self.web_page()
         response = (
@@ -62,8 +69,24 @@ class AsyncWebServer:
         )
         writer.write(response.encode('utf-8'))
         await writer.drain()
+        
     async def handle_get_applets(self, request_lines, writer):
         response_body = json.dumps(self.applets)
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Connection: close\r\n\r\n" + response_body
+        )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
+    
+    async def handle_get_config(self, request_lines, writer):
+        """Handle GET request for configuration settings"""
+        config = {
+            "applet_duration": self.config_manager.get_applet_duration(),
+            "timezone_offset": self.config_manager.get_timezone_offset()
+        }
+        response_body = json.dumps(config)
         response = (
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
@@ -122,6 +145,40 @@ class AsyncWebServer:
             )
             writer.write(response.encode('utf-8'))
             await writer.drain()
+    
+    async def handle_update_config(self, request_lines, writer):
+        """Handle POST request to update configuration settings"""
+        _, body = self.parse_request_body(request_lines)
+        try:
+            params = json.loads(body)
+            applet_duration = params.get("applet_duration", 10)
+            timezone_offset = params.get("timezone_offset", 0)
+            
+            # Update the configs with settings
+            actual_duration = self.config_manager.set_applet_duration(applet_duration)
+            actual_offset = self.config_manager.set_timezone_offset(timezone_offset)
+            
+            print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}")
+            response = (
+                "HTTP/1.1 200 OK\r\n"
+                "Content-Type: application/json\r\n"
+                "Connection: close\r\n\r\n" +
+                json.dumps({
+                    "applet_duration": actual_duration,
+                    "timezone_offset": actual_offset
+                })
+                  
+            )
+        except Exception as e:
+            print(f"[AsyncWebServer] Error updating config: {e}")
+            response = (
+                "HTTP/1.1 400 Bad Request\r\n"
+                "Content-Type: text/plain\r\n"
+                "Connection: close\r\n\r\n"
+                "Could not update configuration"
+            )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
 
     async def handle_move_up(self, request_lines, writer):
         await self.handle_move("up", request_lines, writer)
@@ -205,6 +262,11 @@ class AsyncWebServer:
     #
     def web_page(self) -> str:
         print(f"[AsyncWebServer] IP address: {self.ip_address}")
+        
+        # Get current applet duration
+        applet_duration = self.config_manager.get_applet_duration()
+        timezone_offset = self.config_manager.get_timezone_offset()
+        
         html = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -266,6 +328,7 @@ class AsyncWebServer:
         /* Input fields */
         input[type="text"],
         input[type="password"],
+        input[type="number"],
         button {{
         width: 100%;
         padding: 10px;
@@ -298,7 +361,8 @@ class AsyncWebServer:
         }}
 
         input[type="text"],
-        input[type="password"] {{
+        input[type="password"],
+        input[type="number"] {{
             width: 100%;
         }}
         }}
@@ -361,6 +425,19 @@ class AsyncWebServer:
         <div id="applet-container">
         <!-- Applets will be dynamically rendered here -->
         </div>
+    </form>
+    
+    <h2>Configuration</h2>
+    <form id="config-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
+        <label for="applet-duration" style="display: block; margin-bottom: 5px;">Applet Duration (seconds):</label>
+        <input type="number" id="applet-duration" name="applet_duration" min="3" max="60" step="1" value="{applet_duration}" required>
+        <p style="font-size: 12px; color: #ccc;">Duration must be between 3 and 60 seconds</p>
+    
+        <label for="timezone-offset" style="display: block; margin-top: 15px; margin-bottom: 5px;">Timezone Offset (hours from UTC):</label>
+        <input type="number" id="timezone-offset" name="timezone_offset" min="-12" max="14" step="1" value="{timezone_offset}" required>
+        <p style="font-size: 12px; color: #ccc;">Valid values between -12 and +14</p>
+    
+        <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
     </form>
 
     <button onclick="rebootDevice()" style="max-width: 400px; margin: 20px auto;">Reboot Device</button>
@@ -452,6 +529,22 @@ async function fetchApplets() {{
     }}
   }} catch (error) {{
     console.error('Error fetching applets:', error);
+  }}
+}}
+
+// Fetch configuration
+async function fetchConfig() {{
+  try {{
+    const response = await fetch(`http://${{serverIP}}/config`);
+    if (response.ok) {{
+      const config = await response.json();
+      document.getElementById('applet-duration').value = config.applet_duration;
+      document.getElementById('timezone-offset').value = config.timezone_offset;
+    }} else {{
+      alert('Failed to fetch configuration');
+    }}
+  }} catch (error) {{
+    console.error('Error fetching configuration:', error);
   }}
 }}
 
@@ -553,13 +646,45 @@ async function saveApplets(event) {{
   }}
 }}
 
+// Save configuration
+async function saveConfig(event) {{
+  event.preventDefault();
+  const form = document.getElementById('config-form');
+  const formData = new FormData(form);
+  const data = {{
+    applet_duration: parseInt(formData.get('applet_duration'), 10),
+    timezone_offset: parseInt(formData.get('timezone_offset'), 10)
+  }};
+  
+  try {{
+    const response = await fetch(`http://${{serverIP}}/update_config`, {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify(data),
+    }});
+    
+    if (response.ok) {{
+      const result = await response.json();
+      // Update the input field with the actual value (in case it was adjusted)
+      document.getElementById('applet-duration').value = result.applet_duration;
+      alert('Configuration saved successfully!');
+    }} else {{
+      alert('Failed to save configuration');
+    }}
+  }} catch (error) {{
+    console.error('Error saving configuration:', error);
+  }}
+}}
+
 // Attach handlers
 document.getElementById('wifi-form').addEventListener('submit', addNetwork);
 document.getElementById('applet-form').addEventListener('submit', saveApplets);
+document.getElementById('config-form').addEventListener('submit', saveConfig);
 
 // Initial fetch
 fetchNetworks();
 fetchApplets();
+fetchConfig();
     </script>
     </body>
 

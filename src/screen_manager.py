@@ -5,7 +5,7 @@ import ubinascii
 import uio
 
 class ScreenManager:
-    def __init__(self, theme=None):
+    def __init__(self, theme=None, config_manager=None):
         self.display = PicoGraphics(display=DISPLAY_PICO_DISPLAY_2)
         self.display.set_backlight(1.0)
         self.theme = theme or self.COLOR_SCHEME
@@ -13,6 +13,7 @@ class ScreenManager:
         self.j = jpegdec.JPEG(self.display)
         self.pens = {}
         self.width, self.height = self.display.get_bounds()
+        self.config_manager = config_manager
 
 
     COLOR_SCHEME = {
@@ -84,15 +85,39 @@ class ScreenManager:
         self.display.set_pen(self.get_pen(self.theme['ACCENT_FONT_COLOR']))
         self.display.line(10, 35, self.width - 10, 35)
 
-    def draw_footer(self,  last_fetch_time=None):
-        date = None
+    def draw_footer(self, last_fetch_time=None):
+        # Get timezone offset from config or default to 0 (UTC)
+        timezone_offset = 0
+        if self.config_manager:
+            timezone_offset = self.config_manager.get_timezone_offset()
+        
+        # Convert hours to seconds for time calculation
+        timezone_seconds = timezone_offset * 3600
+        
+        # Create timezone label (e.g., UTC+2, UTC-5, or just UTC for offset 0)
+        if timezone_offset > 0:
+            timezone_label = f"UTC+{timezone_offset}"
+        elif timezone_offset < 0:
+            timezone_label = f"UTC{timezone_offset}"  # Negative sign is automatically included
+        else:
+            timezone_label = "UTC"
+        
+        # Draw footer line
         self.display.set_pen(self.get_pen(self.theme['FOOTER_COLOR']))
         self.display.line(10, self.height - 35, self.width - 10, self.height - 35)
+
+        date = None
         if last_fetch_time is not None:
-            date = self.format_unix_timestamp(last_fetch_time) + " UTC"
+            # Convert Unix timestamp to local time with configured timezone offset
+            local_timestamp = last_fetch_time + timezone_seconds
+            t = time.localtime(local_timestamp)
+            date_str = "{:04}-{:02}-{:02} {:02}:{:02}:{:02} {}".format(
+                t[0], t[1], t[2], t[3], t[4], t[5], timezone_label
+            )
+            date = date_str
 
         footer_text = "Last updated: " + (date or "N/A")
-        self.draw_text(footer_text,15, self.height - 30, scale=1, color=self.theme['FOOTER_COLOR'])
+        self.draw_text(footer_text, 15, self.height - 30, scale=1, color=self.theme['FOOTER_COLOR'])
 
     def draw_label_and_value(self, label, value, x, y, scale=2):
         self.draw_text(f"{label}:", x, y, scale, color=self.theme['ACCENT_FONT_COLOR'])
