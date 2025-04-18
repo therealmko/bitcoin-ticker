@@ -33,7 +33,7 @@ class mempool_applet(BaseApplet):
         if self.drawn:
             return
         self.screen_manager.clear()
-        self.screen_manager.draw_header("Block Height")
+        self.screen_manager.draw_header("Bitcoin Block Height")
         self.data = self.data_manager.get_cached_data(self.api_url)
         if self.data is None:
             print("No data available, attempting to update cache.")
