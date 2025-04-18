@@ -3,7 +3,7 @@ from data_manager import DataManager
 from micropython import const
 import gc
 
-class mempool_applet(BaseApplet):
+class block_height_applet(BaseApplet):
     TTL = const(120)
 
     def __init__(self, screen_manager, data_manager: DataManager):

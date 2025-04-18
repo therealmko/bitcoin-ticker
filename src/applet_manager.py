@@ -41,7 +41,7 @@ class AppletManager:
         self.all_applets = {
             "bitcoin_applet": bitcoin_applet.bitcoin_applet,
             "bitcoin_eur_applet": bitcoin_eur_applet.bitcoin_eur_applet,
-            "block_height_applet": block_height_applet.mempool_applet,
+            "block_height_applet": block_height_applet.block_height_applet,
             "fee_applet": fee_applet.fee_applet,
             "moscow_time_applet": moscow_time_applet.moscow_time_applet,
             "halving_countdown_applet": halving_countdown_applet.halving_countdown_applet,
