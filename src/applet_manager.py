@@ -58,13 +58,24 @@ class AppletManager:
             json.dump(data, f)
 
     def get_applets_list(self):
-        applets = []
-        for applet in self.applets:
-            applets.append({"name": applet.__class__.__name__, "enabled": True})
-        for applet_name in self.all_applets.keys():
-            if applet_name not in [applet["name"] for applet in applets]:
-                applets.append({"name": applet_name, "enabled": False})
-        return applets
+        try:
+            with open("applets.json", "r") as f:
+                saved_data = json.load(f)
+        except:
+            saved_data = []
+
+        # Default all known applets to disabled
+        default_data = [{"name": name, "enabled": False} for name in self.all_applets.keys()]
+
+        # Build a lookup from the saved file
+        applet_map = {entry["name"]: entry.get("enabled", False) for entry in saved_data}
+
+        # Merge saved state into the full list
+        for entry in default_data:
+            name = entry["name"]
+            entry["enabled"] = applet_map.get(name, False)
+
+        return default_data
 
     def load_applets(self, filename="applets.json"):
         try:
