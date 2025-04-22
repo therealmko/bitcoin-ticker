@@ -11,10 +11,11 @@ class mempool_status_applet(BaseApplet):
         self.data_manager = data_manager
         self.api_url = "https://mempool.space/api/mempool"
         self.drawn = False
-        self.register()
+        #self.register()
 
     def start(self):
         super().start()
+        self.register()
 
     def stop(self):
         super().stop()

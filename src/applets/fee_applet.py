@@ -10,10 +10,10 @@ class fee_applet(BaseApplet):
         self.data_manager = data_manager
         self.api_url = "https://mempool.space/api/v1/fees/recommended"
         self.drawn = False
-        self.register()
 
     def start(self):
         super().start()
+        self.register()
 
     def stop(self):
         super().stop()
