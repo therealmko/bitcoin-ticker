@@ -56,6 +56,7 @@ class AppletManager:
             for applet in applets:
                 data.append({"name": applet["name"], "enabled": applet["enabled"]})
             json.dump(data, f)
+        self.applets = self.load_applets(filename)
 
     def get_applets_list(self):
         try:
@@ -134,6 +135,7 @@ class AppletManager:
 
         if self.current_applet:
             self.current_applet.stop()
+            gc.collect()
 
         self.screen_manager.clear()
         self.current_applet = applet
@@ -169,6 +171,7 @@ class AppletManager:
         print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
         if self.current_applet:
             self.current_applet.stop()
+            gc.collect()
         try:
             self.screen_manager.clear()
             self.current_applet = applet
@@ -201,6 +204,7 @@ class AppletManager:
         print(f"[AppletManager] Exception occurred: {exception}")
         if self.current_applet:
             self.current_applet.stop()
+            gc.collect()
 
         error_message = str(exception)
         error_applet = ErrorApplet(self.screen_manager, error_message)
