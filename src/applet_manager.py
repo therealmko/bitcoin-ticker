@@ -153,17 +153,22 @@ class AppletManager:
                 continue
 
             # Get the current applet using the potentially updated index and list
+            # Get the current applet using the potentially updated index and list
             current_applet = self.applets[self.current_index]
+            # Run the applet. _run_applet will call _advance_to_next_applet internally
+            # when the duration expires, which handles index incrementing.
             await self._run_applet(current_applet)
 
-            # Advance index for the *next* iteration, checking list length again
-            # in case it changed during _run_applet (though less likely)
-            if len(self.applets) > 0:
-                 # Use modulo to wrap around the current list length
-                self.current_index = (self.current_index + 1) % len(self.applets)
-            else:
-                # List became empty during run, reset index and loop will handle empty case
-                self.current_index = 0
+            # DO NOT increment index here. It's handled by _advance_to_next_applet
+            # when the applet duration expires inside _run_applet.
+            # # Advance index for the *next* iteration, checking list length again
+            # # in case it changed during _run_applet (though less likely)
+            # if len(self.applets) > 0:
+            #      # Use modulo to wrap around the current list length
+            #     self.current_index = (self.current_index + 1) % len(self.applets)
+            # else:
+            #     # List became empty during run, reset index and loop will handle empty case
+            #     self.current_index = 0
 
 
     async def _run_applet(self, applet, is_system_applet: bool = False) -> None:
@@ -192,9 +197,11 @@ class AppletManager:
 
                 elapsed = time.ticks_diff(time.ticks_ms(), start) / 1000
                 if elapsed >= applet_duration and not is_system_applet:
-                    print(f"[AppletManager] Duration expired after {elapsed:.2f}s")
+                    print(f"[AppletManager] Duration expired after {elapsed:.2f}s for {applet.__class__.__name__}")
+                    print(f"[AppletManager] Current index before advance: {self.current_index}")
                     await self._advance_to_next_applet()
-                    break
+                    print(f"[AppletManager] Current index after advance: {self.current_index}")
+                    break # Exit the _run_applet loop to let start_applets pick the next one
 
                 await asyncio.sleep(0.1)
 
@@ -231,7 +238,8 @@ class AppletManager:
             next_applet.set_preloaded_data(self.next_applet_data)
             self.next_applet_data = None
 
-        print(f"[AppletManager] Advancing to applet: {next_applet.__class__.__name__}")
+        # Note: This function only calculates the index. The start_applets loop will use this index.
+        print(f"[AppletManager] Calculated next index: {self.current_index}. Next applet will be: {next_applet.__class__.__name__}")
 
     async def _display_error(self, message: str) -> None:
         error_applet = ErrorApplet(self.screen_manager, message)
