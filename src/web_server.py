@@ -29,12 +29,12 @@ class AsyncWebServer:
         self.wifi_manager = wifi_manager
         self.applet_manager = applet_manager
         self.ip_address = self.wifi_manager.ip
-        
+
         # Initialize config manager
         self.config_manager = ConfigManager()
 
-        # Example: define your known applets
-        self.applets = self.applet_manager.get_applets_list()
+        # No need to cache applets here, get dynamically
+        # self.applets = self.applet_manager.get_applets_list()
         self.routes = {
             "GET /": self.handle_root,  # Serve the main HTML page
             "GET /networks": self.handle_get_networks,

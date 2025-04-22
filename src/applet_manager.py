@@ -57,6 +57,8 @@ class AppletManager:
                 data.append({"name": applet["name"], "enabled": applet["enabled"]})
             json.dump(data, f)
         self.applets = self.load_applets(filename)
+        self.current_index = 0 # Reset index to start from the beginning of the new list
+        print(f"[AppletManager] Applets updated and reloaded. Current index reset to 0.")
 
     def get_applets_list(self):
         try:
@@ -88,13 +90,19 @@ class AppletManager:
             data = []
             for applet_name in self.all_applets.keys():
                 data.append({"name": applet_name, "enabled": True})
-            self.update_applets(data)
-        except (ValueError):
-            print(f"[AppletManager] Failed to load applets from {filename}. Starting with defaults.")
-            data = []
-            for applet_name in self.all_applets.keys():
-                data.append({"name": applet_name, "enabled": True})
-            self.update_applets(data)
+            # Don't overwrite user config on read error, just return empty
+            # self.update_applets(data)
+            print(f"[AppletManager] WARNING: Could not read or parse {filename}. Returning empty applet list.")
+            return [] # Return empty list on error
+        except ValueError:
+            print(f"[AppletManager] Failed to parse JSON from {filename}. Invalid format.")
+            # Don't overwrite user config on read error, just return empty
+            # data = []
+            # for applet_name in self.all_applets.keys():
+            #     data.append({"name": applet_name, "enabled": True})
+            # self.update_applets(data)
+            print(f"[AppletManager] WARNING: Could not parse {filename}. Returning empty applet list.")
+            return [] # Return empty list on error
 
         applets = []
         for applet in data:
@@ -125,9 +133,38 @@ class AppletManager:
         asyncio.create_task(self.data_manager.run())
 
         while self.running:
-            current_applet = enabled_applets[self.current_index]
+            # Check if the applet list is empty (e.g., user disabled all)
+            if not self.applets:
+                print("[AppletManager] No enabled applets. Waiting...")
+                # Display a message or just wait? Let's wait to avoid constant error screen.
+                # Consider adding a dedicated "No Applets Enabled" applet later if needed.
+                await asyncio.sleep(5)
+                continue # Skip the rest of the loop and re-check
+
+            # Ensure the current index is valid for the *current* list length
+            # This handles cases where the list was modified (e.g., by web UI)
+            if self.current_index >= len(self.applets):
+                print(f"[AppletManager] Current index {self.current_index} out of bounds (len={len(self.applets)}). Resetting to 0.")
+                self.current_index = 0
+
+            # Check again if list became empty after index reset
+            if not self.applets:
+                await asyncio.sleep(1)
+                continue
+
+            # Get the current applet using the potentially updated index and list
+            current_applet = self.applets[self.current_index]
             await self._run_applet(current_applet)
-            self.current_index = (self.current_index + 1) % len(enabled_applets)
+
+            # Advance index for the *next* iteration, checking list length again
+            # in case it changed during _run_applet (though less likely)
+            if len(self.applets) > 0:
+                 # Use modulo to wrap around the current list length
+                self.current_index = (self.current_index + 1) % len(self.applets)
+            else:
+                # List became empty during run, reset index and loop will handle empty case
+                self.current_index = 0
+
 
     async def _run_applet(self, applet, is_system_applet: bool = False) -> None:
         gc.collect()
