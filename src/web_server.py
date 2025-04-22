@@ -29,12 +29,10 @@ class AsyncWebServer:
         self.wifi_manager = wifi_manager
         self.applet_manager = applet_manager
         self.ip_address = self.wifi_manager.ip
-        
+
         # Initialize config manager
         self.config_manager = ConfigManager()
 
-        # Example: define your known applets
-        self.applets = self.applet_manager.get_applets_list()
         self.routes = {
             "GET /": self.handle_root,  # Serve the main HTML page
             "GET /networks": self.handle_get_networks,
@@ -71,7 +69,9 @@ class AsyncWebServer:
         await writer.drain()
         
     async def handle_get_applets(self, request_lines, writer):
-        response_body = json.dumps(self.applets)
+        # Previously: used self.applets (cached during init)
+        applet_list = self.applet_manager.get_applets_list()
+        response_body = json.dumps(applet_list)
         response = (
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
@@ -638,6 +638,7 @@ async function saveApplets(event) {{
     }});
     if (response.ok) {{
       alert('Applet selection saved successfully!');
+      fetchApplets();
     }} else {{
       alert('Failed to save applet selection');
     }}

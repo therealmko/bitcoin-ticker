@@ -56,6 +56,9 @@ class AppletManager:
             for applet in applets:
                 data.append({"name": applet["name"], "enabled": applet["enabled"]})
             json.dump(data, f)
+        self.applets = self.load_applets(filename)
+        self.current_index = 0
+        print(f"[AppletManager] Applets updated and reloaded.")
 
     def get_applets_list(self):
         try:
@@ -87,13 +90,12 @@ class AppletManager:
             data = []
             for applet_name in self.all_applets.keys():
                 data.append({"name": applet_name, "enabled": True})
-            self.update_applets(data)
-        except (ValueError):
-            print(f"[AppletManager] Failed to load applets from {filename}. Starting with defaults.")
-            data = []
-            for applet_name in self.all_applets.keys():
-                data.append({"name": applet_name, "enabled": True})
-            self.update_applets(data)
+            print(f"[AppletManager] WARNING: Could not read {filename}. Returning empty applet list.")
+            return []
+        except ValueError:
+            print(f"[AppletManager] Failed to parse JSON from {filename}. Invalid format.")
+            print(f"[AppletManager] WARNING: Could not parse {filename}. Returning empty applet list.")
+            return []
 
         applets = []
         for applet in data:
@@ -124,9 +126,30 @@ class AppletManager:
         asyncio.create_task(self.data_manager.run())
 
         while self.running:
-            current_applet = enabled_applets[self.current_index]
+            # Check if the applet list is empty (e.g., user disabled all)
+            if not self.applets:
+                print("[AppletManager] No enabled applets. Waiting...")
+                # Display a message or just wait? Let's wait to avoid constant error screen.
+                # Consider adding a dedicated "No Applets Enabled" applet later if needed.
+                await asyncio.sleep(5)
+                continue # Skip the rest of the loop and re-check
+
+            # Ensure the current index is valid for the *current* list length
+            # This handles cases where the list was modified (e.g., by web UI)
+            if self.current_index >= len(self.applets):
+                print(f"[AppletManager] Current index {self.current_index} out of bounds (len={len(self.applets)}). Resetting to 0.")
+                self.current_index = 0
+
+            # Check again if list became empty after index reset
+            if not self.applets:
+                await asyncio.sleep(1)
+                continue
+
+            # Get the current applet using the potentially updated index and list
+            # Get the current applet using the potentially updated index and list
+            current_applet = self.applets[self.current_index]
             await self._run_applet(current_applet)
-            self.current_index = (self.current_index + 1) % len(enabled_applets)
+
 
     async def _run_applet(self, applet, is_system_applet: bool = False) -> None:
         gc.collect()
@@ -134,6 +157,7 @@ class AppletManager:
 
         if self.current_applet:
             self.current_applet.stop()
+            gc.collect()
 
         self.screen_manager.clear()
         self.current_applet = applet
@@ -153,9 +177,8 @@ class AppletManager:
 
                 elapsed = time.ticks_diff(time.ticks_ms(), start) / 1000
                 if elapsed >= applet_duration and not is_system_applet:
-                    print(f"[AppletManager] Duration expired after {elapsed:.2f}s")
                     await self._advance_to_next_applet()
-                    break
+                    break # Exit the _run_applet loop to let start_applets pick the next one
 
                 await asyncio.sleep(0.1)
 
@@ -169,6 +192,7 @@ class AppletManager:
         print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
         if self.current_applet:
             self.current_applet.stop()
+            gc.collect()
         try:
             self.screen_manager.clear()
             self.current_applet = applet
@@ -201,6 +225,7 @@ class AppletManager:
         print(f"[AppletManager] Exception occurred: {exception}")
         if self.current_applet:
             self.current_applet.stop()
+            gc.collect()
 
         error_message = str(exception)
         error_applet = ErrorApplet(self.screen_manager, error_message)

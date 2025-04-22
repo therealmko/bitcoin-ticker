@@ -14,10 +14,11 @@ class difficulty_applet(BaseApplet):
         self.mempool_api = "https://mempool.space/api/v1/difficulty-adjustment"
         self.blockchain_api = "https://blockchain.info/q/getdifficulty"
         self.drawn = False
-        self.register()
+        #self.register()
 
     def start(self):
         super().start()
+        self.register()
 
     def stop(self):
         super().stop()
