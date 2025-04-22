@@ -33,8 +33,6 @@ class AsyncWebServer:
         # Initialize config manager
         self.config_manager = ConfigManager()
 
-        # No need to cache applets here, get dynamically
-        # self.applets = self.applet_manager.get_applets_list()
         self.routes = {
             "GET /": self.handle_root,  # Serve the main HTML page
             "GET /networks": self.handle_get_networks,
@@ -126,10 +124,7 @@ class AsyncWebServer:
         _, body = self.parse_request_body(request_lines)
         try:
             request= json.loads(body)
-            # update_applets handles saving the config and reloading the internal list
             self.applet_manager.update_applets(request)
-            # The line below was redundant as update_applets already reloads. Removed.
-            # self.applet_manager.applets = self.applet_manager.load_applets()
             print("[AsyncWebServer] Updated applet selection:", request)
             response = (
                 "HTTP/1.1 200 OK\r\n"
