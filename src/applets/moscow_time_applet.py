@@ -11,10 +11,10 @@ class moscow_time_applet(BaseApplet):
         self.data_manager = data_manager
         self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
         self.drawn = False
+        self.register()
 
     def start(self):
         super().start()
-        self.register()
 
     def stop(self):
         super().stop()
@@ -24,6 +24,7 @@ class moscow_time_applet(BaseApplet):
         self.data_manager.register_endpoint(self.api_url, self.TTL)
 
     async def update(self):
+        gc.collect()
         return await super().update()
 
     async def draw(self):

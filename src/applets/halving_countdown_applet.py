@@ -16,7 +16,6 @@ class halving_countdown_applet(BaseApplet):
 
     def start(self):
         super().start()
-        self.register()
 
     def stop(self):
         super().stop()

@@ -12,11 +12,10 @@ class block_height_applet(BaseApplet):
         self.api_url = "https://mempool.space/api/v1/blocks/tip/height"
         self.cached_data = None
         self.drawn = False
-        #self.register()
+        self.register()
 
     def start(self):
         super().start()
-        self.register()
 
     def stop(self):
         self.cached_data = None
