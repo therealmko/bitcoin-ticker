@@ -22,10 +22,12 @@ from config import ConfigManager
 
 
 class AppletManager:
-    def __init__(self, screen_manager, data_manager, wifi_manager) -> None:
+    # Add config_manager parameter
+    def __init__(self, screen_manager, data_manager, wifi_manager, config_manager: ConfigManager) -> None:
         self.screen_manager = screen_manager
         self.data_manager = data_manager
         self.wifi_manager = wifi_manager
+        self.config_manager = config_manager # Use the passed instance
 
         self.current_applet = None
         self.current_index = 0
@@ -34,7 +36,8 @@ class AppletManager:
         self.next_applet_data = None
 
         gc.collect()
-        self.config_manager = ConfigManager()
+        # Remove instantiation here, use the passed instance
+        # self.config_manager = ConfigManager()
 
         self._register_applets()
 

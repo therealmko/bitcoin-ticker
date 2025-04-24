@@ -24,7 +24,8 @@ async def main() -> None:
     data_manager = DataManager()
     wifi_manager = WiFiManager()
 
-    applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager)
+    # Pass the single config_manager instance
+    applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager, config_manager)
     splash_applet = applet_manager.SplashApplet(screen_manager)
     print("[Main] Starting splash applet.")
     await applet_manager_instance.run_applet_once(splash_applet)
