@@ -22,12 +22,23 @@ class WiFiManager:
 
         if not self.networks:
             print("No networks found in the list.")
+            print("[WiFiManager] No saved/valid networks found in networks.json.")
             return False
 
-        for network_info in self.networks:
+        print(f"[WiFiManager] Found {len(self.networks)} networks. Attempting connection...")
+        for i, network_info in enumerate(self.networks):
+            ssid = network_info.get('ssid', 'N/A')
+            print(f"[WiFiManager] Attempting connection to network {i+1}/{len(self.networks)}: SSID='{ssid}'")
             if self._connect_to_wifi(network_info['ssid'], network_info['password']):
                 self.ip = self.wlan.ifconfig()[0]
+                print(f"[WiFiManager] Connection successful to SSID='{ssid}'")
+                # Sync time *after* successful connection
+                self._sync_time()
                 return True
+            else:
+                print(f"[WiFiManager] Connection failed to SSID='{ssid}'")
+
+        print("[WiFiManager] Failed to connect to any saved networks.")
         return False
 
     def _connect_to_wifi(self, ssid, password):
@@ -36,15 +47,17 @@ class WiFiManager:
         Returns True if connected successfully, otherwise False.
         """
         self.wlan.connect(ssid, password)
-        for _ in range(10):  # Try for up to 10 seconds
+        # Increased timeout to 15 seconds for potentially slow connections
+        for _ in range(15):
             if self.wlan.isconnected():
-                self._sync_time()
-                print(f'Connected to Wi-Fi network: {ssid}')
-                print('IP:', self.wlan.ifconfig())
+                # Time sync moved out, just report connection success
+                # print(f'Connected to Wi-Fi network: {ssid}') # Caller will print success
+                # print('IP:', self.wlan.ifconfig()) # Caller can access IP if needed
                 return True
+            print(f"[WiFiManager] Waiting for connection to '{ssid}'...")
             time.sleep(1)
 
-        print(f'Failed to connect to Wi-Fi network: {ssid}')
+        # print(f'Failed to connect to Wi-Fi network: {ssid}') # Caller will print failure
         return False
 
     def setup_ap(self):
@@ -113,8 +126,18 @@ class WiFiManager:
         try:
             with open("networks.json", "r") as f:
                 data = json.load(f)
-            return data.get('networks', [])
-        except (OSError, ValueError):
+                print(f"[WiFiManager] Successfully loaded networks.json")
+                # Check if 'networks' key exists and is a list
+                if 'networks' in data and isinstance(data['networks'], list):
+                    return data['networks']
+                else:
+                    print(f"[WiFiManager] networks.json is missing 'networks' list or has wrong format.")
+                    return []
+        except OSError:
+            print(f"[WiFiManager] networks.json not found. Returning empty list.")
+            return []
+        except ValueError:
+            print(f"[WiFiManager] Failed to parse networks.json (invalid JSON). Returning empty list.")
             return []
 
     def _save_networks_to_file(self, networks):
