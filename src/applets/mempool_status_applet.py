@@ -10,44 +10,54 @@ class mempool_status_applet(BaseApplet):
         super().__init__('mempool_status_applet', screen_manager)
         self.data_manager = data_manager
         self.api_url = "https://mempool.space/api/mempool"
-        self.drawn = False
+        self.current_data = None # Store data fetched in update()
         self.register()
 
     def start(self):
+        # Reset data when applet starts
+        self.current_data = None
         super().start()
 
     def stop(self):
+        # No need for drawn flag handling
         super().stop()
-        self.drawn = False
 
     def register(self):
         self.data_manager.register_endpoint(self.api_url, self.TTL)
 
     async def update(self):
+        # Fetch data in update
+        self.current_data = self.data_manager.get_cached_data(self.api_url)
         gc.collect()
-        return await super().update()
+        # No need to call super().update()
 
     async def draw(self):
-        if self.drawn:
-            return
-
+        # Draw uses data fetched by update()
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin Mempool Size")
 
-        self.data = self.data_manager.get_cached_data(self.api_url)
-        if self.data is None:
+        if self.current_data is None:
+            self.screen_manager.draw_centered_text("Loading...")
+            # No footer if no data
             gc.collect()
-            await self.data_manager._update_cache(self.api_url)
-            self.data = self.data_manager.get_cached_data(self.api_url)
-            if self.data is None:
-                return
+            return
+
+        # Draw timestamp from the outer cache dictionary
+        self.screen_manager.draw_footer(self.current_data.get('timestamp', None))
+
+        # Access the nested 'data' dictionary which holds the actual API response
+        mempool_data = self.current_data.get('data', {})
+        if not isinstance(mempool_data, dict):
+            print(f"[mempool_status_applet] Unexpected data format: {mempool_data}")
+            self.screen_manager.draw_centered_text("Data Error")
+            gc.collect()
+            return
 
         try:
-            raw = self.data.get("data", {})
-            count = int(raw.get("count", 0))
-            vsize = int(raw.get("vsize", 0))  # in vbytes
+            count = int(mempool_data.get("count", 0))
+            vsize = int(mempool_data.get("vsize", 0))  # in vbytes
 
-            size_mb = vsize / 1_000_000.0
+            size_mb = vsize / 1_000_000.0 # Calculate MB
             size_str = f"{size_mb:.2f} MB"
             tx_count_str = f"{count:,} TXs"
 
@@ -70,11 +80,10 @@ class mempool_status_applet(BaseApplet):
             # Draw transaction count underneath
             self.screen_manager.draw_horizontal_centered_text(tx_count_str, y=self.screen_manager.height - 60, scale=2)
 
+        except (ValueError, TypeError, KeyError) as e:
+            print(f"[mempool_status_applet] Error parsing data: {e}")
+            self.screen_manager.draw_centered_text("Data Error")
 
-        except Exception as e:
-            print("[mempool applet] Error parsing data:", e)
-
-        self.screen_manager.draw_footer(self.data.get('timestamp', None))
-        self.screen_manager.update()
-        self.drawn = True
+        # screen_manager.update() is called by AppletManager or transition
+        # self.drawn flag removed
         gc.collect()

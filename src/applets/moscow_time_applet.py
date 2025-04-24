@@ -10,63 +10,74 @@ class moscow_time_applet(BaseApplet):
         super().__init__('moscow_time_applet', screen_manager)
         self.data_manager = data_manager
         self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
-        self.drawn = False
+        self.current_data = None # Store data fetched in update()
         self.register()
 
     def start(self):
+        # Reset data when applet starts
+        self.current_data = None
         super().start()
 
     def stop(self):
+        # No need for drawn flag handling
         super().stop()
-        self.drawn = False
 
     def register(self):
+        # Register with default TTL from BaseApplet if not specified otherwise
         self.data_manager.register_endpoint(self.api_url, self.TTL)
 
     async def update(self):
+        # Fetch data in update
+        self.current_data = self.data_manager.get_cached_data(self.api_url)
         gc.collect()
-        return await super().update()
+        # No need to call super().update()
 
     async def draw(self):
-        if self.drawn:
-            return
-
+        # Draw uses data fetched by update()
         self.screen_manager.clear()
         self.screen_manager.draw_header("Moscow Time")
-        self.data = self.data_manager.get_cached_data(self.api_url)
 
-        if self.data is None:
+        if self.current_data is None:
+            self.screen_manager.draw_centered_text("Loading...")
+            # No footer if no data
             gc.collect()
-            await self.data_manager._update_cache(self.api_url)
-            self.data = self.data_manager.get_cached_data(self.api_url)
-            if self.data is None:
-                return
+            return
 
-        if isinstance(self.data, dict):
-            bitcoin_data = self.data.get('data', {})
-            price = bitcoin_data.get('lastPrice')
+        # Draw timestamp from the outer cache dictionary
+        self.screen_manager.draw_footer(self.current_data.get('timestamp', None))
 
-            if price:
-                try:
-                    btc_price = float(price)
-                    if btc_price != 0:  # Check to prevent divide by zero
-                        # Calculate Moscow Time (sats per dollar)
-                        moscow_time = int(100_000_000 / btc_price)
+        # Access the nested 'data' dictionary which holds the actual API response
+        bitcoin_data = self.current_data.get('data', {})
+        if not isinstance(bitcoin_data, dict):
+            print(f"[moscow_time_applet] Unexpected data format: {bitcoin_data}")
+            self.screen_manager.draw_centered_text("Data Error")
+            gc.collect()
+            return
 
-                        # Format as clock display
-                        if moscow_time < 1000:
-                            display_time = f"0{moscow_time//100}:{moscow_time%100:02d}"
-                        else:
-                            display_time = f"{moscow_time//100}:{moscow_time%100:02d}"
+        price = bitcoin_data.get('lastPrice')
 
-                        self.screen_manager.draw_centered_text(display_time, scale=12)
-                    else:
-                        print("BTC price is zero, cannot calculate Moscow Time.")
-                except ValueError as e:
-                    print("Error converting values:", e)
+        if price is not None:
+            try:
+                btc_price = float(price)
+                if btc_price > 0:  # Check price is positive
+                    # Calculate Moscow Time (sats per dollar)
+                    moscow_time = int(100_000_000 / btc_price)
 
-        self.screen_manager.draw_footer(self.data.get('timestamp', None))
-        self.data = None
-        self.screen_manager.update()
-        self.drawn = True
+                    # Format as clock display (e.g., 15:32)
+                    # Ensure it handles cases like 100 sats -> 01:00
+                    display_time = f"{moscow_time//100:02d}:{moscow_time%100:02d}"
+
+                    self.screen_manager.draw_centered_text(display_time, scale=12)
+                else:
+                    print("[moscow_time_applet] BTC price is zero or negative, cannot calculate Moscow Time.")
+                    self.screen_manager.draw_centered_text("N/A")
+            except (ValueError, TypeError) as e:
+                print(f"[moscow_time_applet] Error converting values: {e}")
+                self.screen_manager.draw_centered_text("Data Error")
+        else:
+            # Handle missing price data
+            self.screen_manager.draw_centered_text("N/A")
+
+        # screen_manager.update() is called by AppletManager or transition
+        # self.drawn flag removed
         gc.collect()
