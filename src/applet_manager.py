@@ -4,6 +4,7 @@ from system_applets import base_applet
 import uasyncio as asyncio
 import json
 import time
+import transitions # Import the new transitions module
 
 from system_applets.splash_applet import SplashApplet
 from system_applets.error_applet import ErrorApplet
@@ -153,15 +154,35 @@ class AppletManager:
 
     async def _run_applet(self, applet, is_system_applet: bool = False) -> None:
         gc.collect()
-        print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
+
+        # --- Transition Out ---
+        selected_transition_name = self.config_manager.get_transition_effect()
+        exit_transition, entry_transition = transitions.TRANSITIONS.get(selected_transition_name, (None, None))
 
         if self.current_applet:
+            print(f"[AppletManager] Stopping applet: {self.current_applet.__class__.__name__}")
+            if exit_transition:
+                await exit_transition(self.screen_manager) # Run exit transition before stopping
             self.current_applet.stop()
             gc.collect()
 
-        self.screen_manager.clear()
+        # --- Start New Applet ---
+        print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
+        self.screen_manager.clear() # Clear screen before starting new applet or entry transition
         self.current_applet = applet
         self.current_applet.start()
+
+        # --- Transition In ---
+        if entry_transition:
+            # Draw the first frame before fading in
+            await self.current_applet.update()
+            await self.current_applet.draw()
+            self.screen_manager.update() # Update display buffer
+            await entry_transition(self.screen_manager) # Run entry transition
+        else:
+            # If no transition, ensure backlight is on (might have been turned off by fade out)
+             self.screen_manager.display.set_backlight(1.0)
+
 
         applet_duration = max(3, self.config_manager.get_applet_duration())
         print(f"[AppletManager] Using applet duration: {applet_duration} seconds")

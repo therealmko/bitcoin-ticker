@@ -29,17 +29,18 @@ class AsyncWebServer:
         self.wifi_manager = wifi_manager
         self.applet_manager = applet_manager
         self.ip_address = self.wifi_manager.ip
-        
+
         # Initialize config manager
         self.config_manager = ConfigManager()
 
-        # Example: define your known applets
-        self.applets = self.applet_manager.get_applets_list()
+        # No need to cache applets here, get dynamically
+        # self.applets = self.applet_manager.get_applets_list()
         self.routes = {
             "GET /": self.handle_root,  # Serve the main HTML page
             "GET /networks": self.handle_get_networks,
             "GET /applets": self.handle_get_applets,
-            "GET /config": self.handle_get_config,  # New route to fetch config
+            "GET /config": self.handle_get_config,
+            "GET /transitions": self.handle_get_transitions, # Route to get available transitions
             "POST /submit": self.handle_submit_network,
             "POST /move_up": self.handle_move_up,
             "POST /move_down": self.handle_move_down,
@@ -79,12 +80,26 @@ class AsyncWebServer:
         )
         writer.write(response.encode('utf-8'))
         await writer.drain()
-    
+
+    async def handle_get_transitions(self, request_lines, writer):
+        """Handle GET request for available transition effects"""
+        # Import locally or ensure it's available
+        from transitions import AVAILABLE_TRANSITIONS
+        response_body = json.dumps(AVAILABLE_TRANSITIONS)
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Connection: close\r\n\r\n" + response_body
+        )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
+
     async def handle_get_config(self, request_lines, writer):
         """Handle GET request for configuration settings"""
         config = {
             "applet_duration": self.config_manager.get_applet_duration(),
-            "timezone_offset": self.config_manager.get_timezone_offset()
+            "timezone_offset": self.config_manager.get_timezone_offset(),
+            "transition_effect": self.config_manager.get_transition_effect() # Add transition effect
         }
         response_body = json.dumps(config)
         response = (
@@ -151,14 +166,16 @@ class AsyncWebServer:
         _, body = self.parse_request_body(request_lines)
         try:
             params = json.loads(body)
-            applet_duration = params.get("applet_duration", 10)
-            timezone_offset = params.get("timezone_offset", 0)
-            
+            applet_duration = params.get("applet_duration", self.config_manager.defaults["applet_duration"])
+            timezone_offset = params.get("timezone_offset", self.config_manager.defaults["timezone_offset"])
+            transition_effect = params.get("transition_effect", self.config_manager.defaults["transition_effect"])
+
             # Update the configs with settings
             actual_duration = self.config_manager.set_applet_duration(applet_duration)
             actual_offset = self.config_manager.set_timezone_offset(timezone_offset)
-            
-            print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}")
+            actual_transition = self.config_manager.set_transition_effect(transition_effect) # Update transition
+
+            print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}, transition={actual_transition}")
 
             response = (
                 "HTTP/1.1 200 OK\r\n"
@@ -166,7 +183,8 @@ class AsyncWebServer:
                 "Connection: close\r\n\r\n" +
                 json.dumps({
                     "applet_duration": actual_duration,
-                    "timezone_offset": actual_offset
+                    "timezone_offset": actual_offset,
+                    "transition_effect": actual_transition # Include transition in response
                 })
             )
         except Exception as e:
@@ -263,10 +281,11 @@ class AsyncWebServer:
     def web_page(self) -> str:
         print(f"[AsyncWebServer] IP address: {self.ip_address}")
         
-        # Get current applet duration
+        # Get current config values
         applet_duration = self.config_manager.get_applet_duration()
         timezone_offset = self.config_manager.get_timezone_offset()
-        
+        current_transition = self.config_manager.get_transition_effect()
+
         html = f"""
     <!DOCTYPE html>
     <html lang="en">
@@ -437,7 +456,12 @@ class AsyncWebServer:
         <label for="timezone-offset" style="display: block; margin-top: 15px; margin-bottom: 5px;">Timezone Offset (hours from UTC):</label>
         <input type="number" id="timezone-offset" name="timezone_offset" min="-12" max="14" step="1" value="{timezone_offset}" required>
         <p style="font-size: 12px; color: #ccc;">Valid values between -12 and +14</p>
-    
+
+        <label for="transition-effect" style="display: block; margin-top: 15px; margin-bottom: 5px;">Transition Effect:</label>
+        <select id="transition-effect" name="transition_effect" style="width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; box-sizing: border-box; background-color: #fff; color: #000;">
+            <!-- Options will be populated by JavaScript -->
+        </select>
+
         <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
     </form>
 
@@ -541,11 +565,40 @@ async function fetchConfig() {{
       const config = await response.json();
       document.getElementById('applet-duration').value = config.applet_duration;
       document.getElementById('timezone-offset').value = config.timezone_offset;
+      // Set the selected transition effect in the dropdown
+      const transitionSelect = document.getElementById('transition-effect');
+      if (transitionSelect) {{
+          transitionSelect.value = config.transition_effect;
+      }}
     }} else {{
       alert('Failed to fetch configuration');
     }}
   }} catch (error) {{
     console.error('Error fetching configuration:', error);
+  }}
+}}
+
+// Fetch available transitions and populate dropdown
+async function fetchTransitions() {{
+  try {{
+    const response = await fetch(`http://${{serverIP}}/transitions`);
+    if (response.ok) {{
+      const transitions = await response.json();
+      const selectElement = document.getElementById('transition-effect');
+      selectElement.innerHTML = ''; // Clear existing options
+      transitions.forEach(effect => {{
+        const option = document.createElement('option');
+        option.value = effect;
+        option.textContent = effect;
+        selectElement.appendChild(option);
+      }});
+      // After populating, fetch the current config to set the selected value
+      fetchConfig();
+    }} else {{
+      alert('Failed to fetch transition options');
+    }}
+  }} catch (error) {{
+    console.error('Error fetching transitions:', error);
   }}
 }}
 
@@ -654,9 +707,10 @@ async function saveConfig(event) {{
   const formData = new FormData(form);
   const data = {{
     applet_duration: parseInt(formData.get('applet_duration'), 10),
-    timezone_offset: parseInt(formData.get('timezone_offset'), 10)
+    timezone_offset: parseInt(formData.get('timezone_offset'), 10),
+    transition_effect: formData.get('transition_effect') // Get selected transition
   }};
-  
+
   try {{
     const response = await fetch(`http://${{serverIP}}/update_config`, {{
       method: 'POST',
@@ -666,8 +720,10 @@ async function saveConfig(event) {{
     
     if (response.ok) {{
       const result = await response.json();
-      // Update the input field with the actual value (in case it was adjusted)
+      // Update fields with actual values (in case they were adjusted/validated)
       document.getElementById('applet-duration').value = result.applet_duration;
+      document.getElementById('timezone-offset').value = result.timezone_offset;
+      document.getElementById('transition-effect').value = result.transition_effect;
       alert('Configuration saved successfully!');
     }} else {{
       alert('Failed to save configuration');
@@ -685,7 +741,7 @@ document.getElementById('config-form').addEventListener('submit', saveConfig);
 // Initial fetch
 fetchNetworks();
 fetchApplets();
-fetchConfig();
+fetchTransitions(); // Fetch transitions first, then config sets the value
     </script>
     </body>
 
