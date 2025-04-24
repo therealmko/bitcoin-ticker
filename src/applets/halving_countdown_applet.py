@@ -11,15 +11,18 @@ class halving_countdown_applet(BaseApplet):
         super().__init__('halving_countdown_applet', screen_manager)
         self.data_manager = data_manager
         self.api_url = "https://mempool.space/api/blocks/tip/height"
-        self.drawn = False
+        self.current_data = None
+        # self.drawn flag removed
         self.register()
 
     def start(self):
+        # Reset data when applet starts
+        self.current_data = None
         super().start()
 
     def stop(self):
         super().stop()
-        self.drawn = False
+        # self.drawn flag removed
 
     def register(self):
         self.data_manager.register_endpoint(self.api_url, self.TTL)
@@ -34,33 +37,33 @@ class halving_countdown_applet(BaseApplet):
         return blocks_remaining
 
     async def update(self):
+        # Fetch the latest data from cache on each update cycle
+        self.current_data = self.data_manager.get_cached_data(self.api_url)
         gc.collect()
-        return await super().update()
+        # No need to call super().update()
 
     async def draw(self):
-        if self.drawn:
-            return
-
+        # Removed self.drawn check
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin Halving Countdown")
-        self.data = self.data_manager.get_cached_data(self.api_url)
 
-        if self.data is None:
-            gc.collect()
-            await self.data_manager._update_cache(self.api_url)
-            self.data = self.data_manager.get_cached_data(self.api_url)
-            if self.data is None:
-                return
+        # Use the data fetched in update()
+        if self.current_data is None:
+            self.screen_manager.draw_centered_text("Loading...")
+            # No footer yet
+        else:
+            self.screen_manager.draw_footer(self.current_data.get('timestamp', None))
+            try:
+                current_height = int(self.current_data.get('data', 0))
+                if current_height > 0:
+                    blocks_remaining = self.calculate_next_halving(current_height)
+                    self.screen_manager.draw_centered_text(f"{blocks_remaining:,}")
+                else:
+                    self.screen_manager.draw_centered_text("N/A") # Handle case where height is 0 or missing
+            except (ValueError, TypeError) as e:
+                print("Error processing block height:", e)
+                self.screen_manager.draw_centered_text("Error") # Display error on screen
 
-        try:
-            current_height = int(self.data.get('data', 0))
-            blocks_remaining = self.calculate_next_halving(current_height)
-            self.screen_manager.draw_centered_text(f"{blocks_remaining:,}")
-        except (ValueError, TypeError) as e:
-            print("Error processing block height:", e)
-
-        self.screen_manager.draw_footer(self.data.get('timestamp', None))
-        self.data = None
-        self.screen_manager.update()
-        self.drawn = True
+        # screen_manager.update() is called by AppletManager
+        # self.drawn = True removed
         gc.collect()
