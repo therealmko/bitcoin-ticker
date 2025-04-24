@@ -87,13 +87,11 @@ class AppletManager:
                 data = json.load(f)
                 print(f"[AppletManager] Loaded applets from {filename}")
         except OSError:
-            print(f"[AppletManager] Failed to load applets from {filename}. Starting with defaults.")
-            data = []
-            for applet_name in self.all_applets.keys():
-                data.append({"name": applet_name, "enabled": True})
+            # Don't create defaults, just return empty on file read error
             print(f"[AppletManager] WARNING: Could not read {filename}. Returning empty applet list.")
             return []
         except ValueError:
+            # Return empty on JSON parsing error
             print(f"[AppletManager] Failed to parse JSON from {filename}. Invalid format.")
             print(f"[AppletManager] WARNING: Could not parse {filename}. Returning empty applet list.")
             return []
@@ -110,17 +108,22 @@ class AppletManager:
             if not applet_class:
                 print(f"[AppletManager] Applet not found: {applet_name}")
                 continue
-            applets.append(applet_class(self.screen_manager, self.data_manager))
+            # Instantiate the applet
+            applet_instance = applet_class(self.screen_manager, self.data_manager)
+            # Register its data requirements with the DataManager
+            applet_instance.register()
+            applets.append(applet_instance)
         return applets
 
     def _get_applet_class(self, name):
         return self.all_applets.get(name)
 
     async def start_applets(self) -> None:
-        enabled_applets = self.applets
+        # Removed redundant enabled_applets = self.applets
+        # The loop below checks self.applets directly
 
-        if not enabled_applets:
-            print("[AppletManager] No applets registered. Displaying error.")
+        if not self.applets: # Check initial state
+            print("[AppletManager] No applets registered or enabled at start. Displaying error.")
             await self._display_error("No applets registered or enabled.")
             return
 
