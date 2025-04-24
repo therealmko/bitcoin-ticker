@@ -64,7 +64,8 @@ class bitcoin_eur_applet(BaseApplet):
 
                     # Draw the label, price and change
                     self.screen_manager.draw_centered_text("BTC/EUR", scale=3, y_offset=-60)
-                    self.screen_manager.draw_centered_text(f"€{int(eur_price):,}") # Use Euro symbol
+                    # Use "E " instead of Euro symbol for compatibility with bitmap font
+                    self.screen_manager.draw_centered_text(f"E {int(eur_price):,}")
 
                     # Draw the change percentage with indicator triangle
                     change_text = f"24h change: {change:+.2f}%"
