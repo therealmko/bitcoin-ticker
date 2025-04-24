@@ -177,14 +177,25 @@ class AppletManager:
 
         # --- Transition In ---
         if entry_transition:
-            # Draw the first frame before fading in
-            await self.current_applet.update()
-            await self.current_applet.draw()
-            self.screen_manager.update() # Update display buffer
-            await entry_transition(self.screen_manager) # Run entry transition
+            # For transitions like Wipe In, we need to pass the applet instance
+            # Check function signature or use inspection if possible, but try/except is simpler here
+            try:
+                # Attempt to call with applet instance
+                await entry_transition(self.screen_manager, self.current_applet)
+            except TypeError:
+                # If it fails, call without applet instance (like fade_in)
+                # Draw the first frame first for effects like fade
+                await self.current_applet.update()
+                await self.current_applet.draw()
+                self.screen_manager.update() # Update display buffer
+                await entry_transition(self.screen_manager)
         else:
             # If no transition, ensure backlight is on (might have been turned off by fade out)
              self.screen_manager.display.set_backlight(1.0)
+             # Also ensure the applet is drawn once if no transition handles it
+             await self.current_applet.update()
+             await self.current_applet.draw()
+             self.screen_manager.update()
 
 
         applet_duration = max(3, self.config_manager.get_applet_duration())
