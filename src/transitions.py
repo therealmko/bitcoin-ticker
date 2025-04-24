@@ -124,8 +124,13 @@ async def wipe_in_from_black_ltr(screen_manager, applet_to_draw, duration_ms=DEF
         print(f"[Transition] Error during wipe in LTR: {e}")
         # Ensure full applet is drawn in case of error
         display.remove_clip() # Ensure clip is removed
+        # Perform a final, unclipped draw to ensure the full screen is correct
         await applet_to_draw.draw()
         display.update()
+    finally:
+        # Ensure clip is always removed, even if errors occurred above
+        # Using screen_manager instance as 'display' might not be defined if error happened early
+        screen_manager.display.remove_clip()
 
 
 # Dictionary mapping transition names to their functions (or None)

@@ -175,27 +175,32 @@ class AppletManager:
         self.current_applet = applet
         self.current_applet.start()
 
+        # Prepare the applet's data *before* the transition starts
+        await self.current_applet.update()
+
         # --- Transition In ---
         if entry_transition:
-            # For transitions like Wipe In, we need to pass the applet instance
-            # Check function signature or use inspection if possible, but try/except is simpler here
-            try:
-                # Attempt to call with applet instance
+            print(f"[AppletManager] Running entry transition: {selected_transition_name}")
+            if selected_transition_name == "Wipe LTR":
+                 # Wipe LTR requires the applet instance to draw during the wipe
                 await entry_transition(self.screen_manager, self.current_applet)
-            except TypeError:
-                # If it fails, call without applet instance (like fade_in)
-                # Draw the first frame first for effects like fade
-                await self.current_applet.update()
-                await self.current_applet.draw()
-                self.screen_manager.update() # Update display buffer
-                await entry_transition(self.screen_manager)
+            elif selected_transition_name == "Fade":
+                # Fade In draws the first frame, then fades the backlight
+                await self.current_applet.draw() # Draw first frame
+                self.screen_manager.update()      # Update display buffer
+                await entry_transition(self.screen_manager) # Run fade_in
+            else:
+                 # Handle other potential future transitions or default to just drawing
+                 print(f"[AppletManager] Unknown entry transition '{selected_transition_name}', drawing directly.")
+                 await self.current_applet.draw()
+                 self.screen_manager.update()
+                 self.screen_manager.display.set_backlight(1.0) # Ensure backlight is on
         else:
-            # If no transition, ensure backlight is on (might have been turned off by fade out)
-             self.screen_manager.display.set_backlight(1.0)
-             # Also ensure the applet is drawn once if no transition handles it
-             await self.current_applet.update()
-             await self.current_applet.draw()
-             self.screen_manager.update()
+            # No transition ("None")
+            print("[AppletManager] No entry transition, drawing directly.")
+            self.screen_manager.display.set_backlight(1.0) # Ensure backlight is on
+            await self.current_applet.draw() # Draw the applet content
+            self.screen_manager.update() # Update display buffer
 
 
         applet_duration = max(3, self.config_manager.get_applet_duration())
