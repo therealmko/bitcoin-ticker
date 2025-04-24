@@ -10,52 +10,45 @@ class block_height_applet(BaseApplet):
         super().__init__('block_height_applet', screen_manager)
         self.data_manager = data_manager
         self.api_url = "https://mempool.space/api/v1/blocks/tip/height"
-        self.current_data = None # Renamed from cached_data for clarity
-        # self.drawn flag removed
+        self.cached_data = None
+        self.drawn = False
         self.register()
 
     def start(self):
-        # Reset data when applet starts to ensure fresh fetch
-        self.current_data = None
         super().start()
 
     def stop(self):
-        # No need to clear data here, start() handles it.
+        self.cached_data = None
         super().stop()
-        # self.drawn flag removed
+        self.drawn = False
 
     def register(self):
         self.data_manager.register_endpoint(self.api_url, self.TTL)
 
     async def update(self):
-        # Fetch the latest data from cache on each update cycle
-        self.current_data = self.data_manager.get_cached_data(self.api_url)
         gc.collect()
-        # No need to call super().update() as it does nothing by default
+        return await super().update()
 
     async def draw(self):
-        # Removed self.drawn check - draw every time update() is called by manager
+        if self.drawn:
+            return
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin Block Height")
-
-        # Use the data fetched in update()
-        if self.current_data is None:
-            # Optionally display a loading or error message
-            self.screen_manager.draw_centered_text("Loading...")
-            # No footer yet if no data
-        else:
-            self.screen_manager.draw_footer(self.current_data.get('timestamp', None))
-            height = self.current_data.get('data')
-            if height is not None:
-                try:
-                    # Format with commas
-                    self.screen_manager.draw_centered_text(f"{int(height):,}")
-                except (ValueError, TypeError):
-                    self.screen_manager.draw_centered_text("Error") # Handle potential conversion errors
-            else:
-                self.screen_manager.draw_centered_text("N/A") # Handle missing height data
-
-        # screen_manager.update() is called by AppletManager after draw()
-        # self.drawn = True removed
+        self.data = self.data_manager.get_cached_data(self.api_url)
+        if self.data is None:
+            print("No data available, attempting to update cache.")
+            gc.collect()
+            await self.data_manager._update_cache(self.api_url)
+            self.data = self.data_manager.get_cached_data(self.api_url)
+            if self.data is None:
+                return
+        self.screen_manager.draw_footer(self.data.get('timestamp', None))
+        height = self.data.get('data')
+        if height is not None:
+            self.screen_manager.draw_centered_text(f"{int(height):,}")  # Let it use default scale=8
+        height = None
+        self.data = None
+        self.screen_manager.update()
+        self.drawn = True
 
         gc.collect()
