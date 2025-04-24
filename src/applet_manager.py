@@ -159,12 +159,13 @@ class AppletManager:
         gc.collect()
 
         # --- Transition Out ---
-        selected_transition_name = self.config_manager.get_transition_effect()
-        exit_transition, entry_transition = transitions.TRANSITIONS.get(selected_transition_name, (None, None))
-
         if self.current_applet:
             print(f"[AppletManager] Stopping applet: {self.current_applet.__class__.__name__}")
+            # Get the *current* transition setting just before potentially running the exit transition
+            selected_transition_name = self.config_manager.get_transition_effect()
+            exit_transition, _ = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need exit func here
             if exit_transition:
+                print(f"[AppletManager] Running exit transition: {selected_transition_name}")
                 await exit_transition(self.screen_manager) # Run exit transition before stopping
             self.current_applet.stop()
             gc.collect()
@@ -179,6 +180,10 @@ class AppletManager:
         await self.current_applet.update()
 
         # --- Transition In ---
+        # Get the *current* transition setting just before potentially running the entry transition
+        selected_transition_name = self.config_manager.get_transition_effect()
+        _, entry_transition = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need entry func here
+
         if entry_transition:
             print(f"[AppletManager] Running entry transition: {selected_transition_name}")
             if selected_transition_name == "Wipe LTR":
