@@ -15,12 +15,10 @@ class halving_countdown_applet(BaseApplet):
         self.register()
 
     def start(self):
-        # Reset data when applet starts
         self.current_data = None
         super().start()
 
     def stop(self):
-        # No need to handle drawn flag here
         super().stop()
 
     def register(self):
@@ -36,18 +34,13 @@ class halving_countdown_applet(BaseApplet):
         return blocks_remaining
 
     async def update(self):
-        # Fetch the latest data from cache on each update cycle
         self.current_data = self.data_manager.get_cached_data(self.api_url)
-        # print(f"[halving_countdown_applet] Updated data: {self.current_data}") # Optional debug print
         gc.collect()
-        # No need to call super().update()
 
     async def draw(self):
-        # Draw is called repeatedly by AppletManager, uses data from update()
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin Halving Countdown")
 
-        # Use the data fetched in update()
         if self.current_data is None:
             self.screen_manager.draw_centered_text("Loading...")
             # No footer if no data
@@ -64,6 +57,4 @@ class halving_countdown_applet(BaseApplet):
                 print("Error processing block height:", e)
                 self.screen_manager.draw_centered_text("Error") # Display error on screen
 
-        # screen_manager.update() is called by AppletManager
-        # self.drawn flag removed
         gc.collect()

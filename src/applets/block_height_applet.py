@@ -14,26 +14,20 @@ class block_height_applet(BaseApplet):
         self.register()
 
     def start(self):
-        # Reset data when applet starts to ensure fresh fetch on first update
         self.current_data = None
         super().start()
 
     def stop(self):
-        # No need to clear data or handle drawn flag here
         super().stop()
 
     def register(self):
         self.data_manager.register_endpoint(self.api_url, self.TTL)
 
     async def update(self):
-        # Fetch the latest data from cache on each update cycle
         self.current_data = self.data_manager.get_cached_data(self.api_url)
-        # print(f"[block_height_applet] Updated data: {self.current_data}") # Optional debug print
         gc.collect()
-        # No need to call super().update()
 
     async def draw(self):
-        # Draw is called repeatedly by AppletManager, uses data from update()
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin Block Height")
 
@@ -53,6 +47,4 @@ class block_height_applet(BaseApplet):
             else:
                 self.screen_manager.draw_centered_text("N/A") # Handle missing height data
 
-        # screen_manager.update() is called by AppletManager after draw()
-        # self.drawn flag removed
         gc.collect()
