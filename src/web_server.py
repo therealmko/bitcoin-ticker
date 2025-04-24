@@ -72,7 +72,9 @@ class AsyncWebServer:
         await writer.drain()
         
     async def handle_get_applets(self, request_lines, writer):
-        response_body = json.dumps(self.applets)
+        # Fetch the current applet list directly from the manager
+        applets_list = self.applet_manager.get_applets_list()
+        response_body = json.dumps(applets_list)
         response = (
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
