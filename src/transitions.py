@@ -332,5 +332,12 @@ TRANSITIONS = {
     # Add more transitions here in the future
 }
 
-# List of available transition names for the UI
-AVAILABLE_TRANSITIONS = list(TRANSITIONS.keys())
+# List of available transition names for the UI, in the desired order
+AVAILABLE_TRANSITIONS = [
+    "None",
+    "Fade",
+    "Wipe Left-To-Right",
+    "Wipe Right-To-Left",
+    "Wipe Top-To-Bottom",
+    "Wipe Bottom-To-Top",
+]
