@@ -7,7 +7,10 @@ This is a fully open source project that you can build yourself! We've designed 
 
 A Bitcoin price and blockchain information display built with Raspberry Pi Pico W and Pimoroni Display Pack 2.8.
 
-[![Watch on YouTube](https://img.youtube.com/vi/SD7deq_Zz4w/hqdefault.jpg)](https://www.youtube.com/watch?v=SD7deq_Zz4w)
+**Watch the tutorial on Youtube:**
+<a href="https://www.youtube.com/watch?v=SD7deq_Zz4w" target="_blank" rel="noopener noreferrer">
+  <img src="https://img.youtube.com/vi/SD7deq_Zz4w/hqdefault.jpg" alt="Watch on YouTube" />
+</a>
 
 ## ✨ Features
  
