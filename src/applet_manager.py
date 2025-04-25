@@ -166,6 +166,7 @@ class AppletManager:
             print(f"[AppletManager] Stopping applet: {self.current_applet.__class__.__name__}")
             # Get the *current* transition setting just before potentially running the exit transition
             selected_transition_name = self.config_manager.get_transition_effect()
+            print(f"[AppletManager] Read transition for exit: '{selected_transition_name}'") # ADDED LOGGING
             exit_transition, _ = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need exit func here
             if exit_transition:
                 print(f"[AppletManager] Running exit transition: {selected_transition_name}")
@@ -185,11 +186,13 @@ class AppletManager:
         # --- Transition In ---
         # Get the *current* transition setting just before potentially running the entry transition
         selected_transition_name = self.config_manager.get_transition_effect()
+        print(f"[AppletManager] Read transition for entry: '{selected_transition_name}'") # ADDED LOGGING
         _, entry_transition = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need entry func here
 
         if entry_transition:
             print(f"[AppletManager] Running entry transition: {selected_transition_name}")
-            if selected_transition_name == "Wipe LTR":
+            # Corrected key name from previous commit
+            if selected_transition_name == "Wipe Left-To-Right":
                  # Wipe LTR requires the applet instance to draw during the wipe
                 await entry_transition(self.screen_manager, self.current_applet)
             elif selected_transition_name == "Fade":
@@ -199,7 +202,8 @@ class AppletManager:
                 await entry_transition(self.screen_manager) # Run fade_in
             else:
                  # Handle other potential future transitions or default to just drawing
-                 print(f"[AppletManager] Unknown entry transition '{selected_transition_name}', drawing directly.")
+                 # Check against the actual key used in transitions.py
+                 print(f"[AppletManager] Unknown or unsupported entry transition '{selected_transition_name}', drawing directly.")
                  await self.current_applet.draw()
                  self.screen_manager.update()
                  self.screen_manager.display.set_backlight(1.0) # Ensure backlight is on

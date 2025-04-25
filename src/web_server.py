@@ -24,14 +24,15 @@ class AsyncWebServer:
     :param wifi_manager: An instance responsible for loading,
                          saving, and manipulating Wi-Fi credentials.
     """
-
-    def __init__(self, wifi_manager: wifi_manager.WiFiManager, applet_manager: applet_manager.AppletManager) -> None:
+    # Add config_manager parameter - This was the intended change
+    def __init__(self, wifi_manager: wifi_manager.WiFiManager, applet_manager: applet_manager.AppletManager, config_manager: ConfigManager) -> None:
         self.wifi_manager = wifi_manager
         self.applet_manager = applet_manager
+        self.config_manager = config_manager # Use the passed instance
         self.ip_address = self.wifi_manager.ip
 
-        # Initialize config manager
-        self.config_manager = ConfigManager()
+        # Remove instantiation here, use the passed instance
+        # self.config_manager = ConfigManager()
 
         # No need to cache applets here, get dynamically
         # self.applets = self.applet_manager.get_applets_list()
