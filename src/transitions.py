@@ -133,6 +133,192 @@ async def wipe_in_from_black_ltr(screen_manager, applet_to_draw, duration_ms=DEF
         screen_manager.display.remove_clip()
 
 
+async def wipe_out_to_black_rtl(screen_manager, duration_ms=DEFAULT_WIPE_DURATION_MS):
+    """Wipe the current screen content out to black, right to left."""
+    print("[Transition] Wiping out RTL...")
+    try:
+        display = screen_manager.display
+        width, height = display.get_bounds()
+        step_delay = duration_ms // EFFECT_STEPS
+        black_pen = screen_manager.get_pen(screen_manager.theme["BACKGROUND_COLOR"])
+
+        for i in range(EFFECT_STEPS + 1):
+            current_x = width - ((width * i) // EFFECT_STEPS)
+            display.set_pen(black_pen)
+            display.rectangle(current_x, 0, width - current_x, height) # Draw from right edge inwards
+            display.update()
+            await asyncio.sleep_ms(step_delay)
+        print("[Transition] Wipe out RTL complete.")
+    except Exception as e:
+        print(f"[Transition] Error during wipe out RTL: {e}")
+        display.set_pen(black_pen)
+        display.rectangle(0, 0, width, height)
+        display.update()
+
+
+async def wipe_in_from_black_rtl(screen_manager, applet_to_draw, duration_ms=DEFAULT_WIPE_DURATION_MS):
+    """Wipe the new applet content in over black, right to left."""
+    print("[Transition] Wiping in RTL...")
+    try:
+        display = screen_manager.display
+        width, height = display.get_bounds()
+        step_delay = duration_ms // EFFECT_STEPS
+        black_pen = screen_manager.get_pen(screen_manager.theme["BACKGROUND_COLOR"])
+
+        display.set_pen(black_pen)
+        display.rectangle(0, 0, width, height)
+        display.update()
+        await asyncio.sleep_ms(50)
+
+        for i in range(1, EFFECT_STEPS + 1):
+            current_width = (width * i) // EFFECT_STEPS
+            current_x = width - current_width
+            display.set_clip(current_x, 0, current_width, height) # Clip from right edge inwards
+
+            display.set_pen(black_pen)
+            display.clear()
+            await applet_to_draw.draw()
+
+            display.update()
+            await asyncio.sleep_ms(step_delay)
+
+        display.remove_clip()
+        await applet_to_draw.draw()
+        display.update()
+        print("[Transition] Wipe in RTL complete.")
+    except Exception as e:
+        print(f"[Transition] Error during wipe in RTL: {e}")
+        display.remove_clip()
+        await applet_to_draw.draw()
+        display.update()
+    finally:
+        screen_manager.display.remove_clip()
+
+
+async def wipe_out_to_black_ttb(screen_manager, duration_ms=DEFAULT_WIPE_DURATION_MS):
+    """Wipe the current screen content out to black, top to bottom."""
+    print("[Transition] Wiping out TTB...")
+    try:
+        display = screen_manager.display
+        width, height = display.get_bounds()
+        step_delay = duration_ms // EFFECT_STEPS
+        black_pen = screen_manager.get_pen(screen_manager.theme["BACKGROUND_COLOR"])
+
+        for i in range(EFFECT_STEPS + 1):
+            current_height = (height * i) // EFFECT_STEPS
+            display.set_pen(black_pen)
+            display.rectangle(0, 0, width, current_height) # Draw from top edge downwards
+            display.update()
+            await asyncio.sleep_ms(step_delay)
+        print("[Transition] Wipe out TTB complete.")
+    except Exception as e:
+        print(f"[Transition] Error during wipe out TTB: {e}")
+        display.set_pen(black_pen)
+        display.rectangle(0, 0, width, height)
+        display.update()
+
+
+async def wipe_in_from_black_ttb(screen_manager, applet_to_draw, duration_ms=DEFAULT_WIPE_DURATION_MS):
+    """Wipe the new applet content in over black, top to bottom."""
+    print("[Transition] Wiping in TTB...")
+    try:
+        display = screen_manager.display
+        width, height = display.get_bounds()
+        step_delay = duration_ms // EFFECT_STEPS
+        black_pen = screen_manager.get_pen(screen_manager.theme["BACKGROUND_COLOR"])
+
+        display.set_pen(black_pen)
+        display.rectangle(0, 0, width, height)
+        display.update()
+        await asyncio.sleep_ms(50)
+
+        for i in range(1, EFFECT_STEPS + 1):
+            current_height = (height * i) // EFFECT_STEPS
+            display.set_clip(0, 0, width, current_height) # Clip from top edge downwards
+
+            display.set_pen(black_pen)
+            display.clear()
+            await applet_to_draw.draw()
+
+            display.update()
+            await asyncio.sleep_ms(step_delay)
+
+        display.remove_clip()
+        await applet_to_draw.draw()
+        display.update()
+        print("[Transition] Wipe in TTB complete.")
+    except Exception as e:
+        print(f"[Transition] Error during wipe in TTB: {e}")
+        display.remove_clip()
+        await applet_to_draw.draw()
+        display.update()
+    finally:
+        screen_manager.display.remove_clip()
+
+
+async def wipe_out_to_black_btt(screen_manager, duration_ms=DEFAULT_WIPE_DURATION_MS):
+    """Wipe the current screen content out to black, bottom to top."""
+    print("[Transition] Wiping out BTT...")
+    try:
+        display = screen_manager.display
+        width, height = display.get_bounds()
+        step_delay = duration_ms // EFFECT_STEPS
+        black_pen = screen_manager.get_pen(screen_manager.theme["BACKGROUND_COLOR"])
+
+        for i in range(EFFECT_STEPS + 1):
+            current_height = (height * i) // EFFECT_STEPS
+            current_y = height - current_height
+            display.set_pen(black_pen)
+            display.rectangle(0, current_y, width, current_height) # Draw from bottom edge upwards
+            display.update()
+            await asyncio.sleep_ms(step_delay)
+        print("[Transition] Wipe out BTT complete.")
+    except Exception as e:
+        print(f"[Transition] Error during wipe out BTT: {e}")
+        display.set_pen(black_pen)
+        display.rectangle(0, 0, width, height)
+        display.update()
+
+
+async def wipe_in_from_black_btt(screen_manager, applet_to_draw, duration_ms=DEFAULT_WIPE_DURATION_MS):
+    """Wipe the new applet content in over black, bottom to top."""
+    print("[Transition] Wiping in BTT...")
+    try:
+        display = screen_manager.display
+        width, height = display.get_bounds()
+        step_delay = duration_ms // EFFECT_STEPS
+        black_pen = screen_manager.get_pen(screen_manager.theme["BACKGROUND_COLOR"])
+
+        display.set_pen(black_pen)
+        display.rectangle(0, 0, width, height)
+        display.update()
+        await asyncio.sleep_ms(50)
+
+        for i in range(1, EFFECT_STEPS + 1):
+            current_height = (height * i) // EFFECT_STEPS
+            current_y = height - current_height
+            display.set_clip(0, current_y, width, current_height) # Clip from bottom edge upwards
+
+            display.set_pen(black_pen)
+            display.clear()
+            await applet_to_draw.draw()
+
+            display.update()
+            await asyncio.sleep_ms(step_delay)
+
+        display.remove_clip()
+        await applet_to_draw.draw()
+        display.update()
+        print("[Transition] Wipe in BTT complete.")
+    except Exception as e:
+        print(f"[Transition] Error during wipe in BTT: {e}")
+        display.remove_clip()
+        await applet_to_draw.draw()
+        display.update()
+    finally:
+        screen_manager.display.remove_clip()
+
+
 # Dictionary mapping transition names to their functions (or None)
 # We store tuples: (exit_transition_func, entry_transition_func)
 # Entry transition functions might require the applet instance as the second argument.
@@ -140,6 +326,9 @@ TRANSITIONS = {
     "None": (None, None),
     "Fade": (fade_out, fade_in),
     "Wipe Left-To-Right": (wipe_out_to_black_ltr, wipe_in_from_black_ltr),
+    "Wipe Right-To-Left": (wipe_out_to_black_rtl, wipe_in_from_black_rtl),
+    "Wipe Top-To-Bottom": (wipe_out_to_black_ttb, wipe_in_from_black_ttb),
+    "Wipe Bottom-To-Top": (wipe_out_to_black_btt, wipe_in_from_black_btt),
     # Add more transitions here in the future
 }
 

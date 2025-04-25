@@ -191,9 +191,9 @@ class AppletManager:
 
         if entry_transition:
             print(f"[AppletManager] Running entry transition: {selected_transition_name}")
-            # Corrected key name from previous commit
-            if selected_transition_name == "Wipe Left-To-Right":
-                 # Wipe LTR requires the applet instance to draw during the wipe
+            # Check if the transition name indicates a wipe effect requiring the applet instance
+            if "Wipe" in selected_transition_name:
+                 # All Wipe transitions require the applet instance to draw during the wipe
                 await entry_transition(self.screen_manager, self.current_applet)
             elif selected_transition_name == "Fade":
                 # Fade In draws the first frame, then fades the backlight
