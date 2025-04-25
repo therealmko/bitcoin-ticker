@@ -454,15 +454,15 @@ class AsyncWebServer:
         <label for="applet-duration" style="display: block; margin-bottom: 5px;">Applet Duration (seconds):</label>
         <input type="number" id="applet-duration" name="applet_duration" min="3" max="60" step="1" value="{applet_duration}" required>
         <p style="font-size: 12px; color: #ccc;">Duration must be between 3 and 60 seconds</p>
+
+        <label for="transition-effect" style="display: block; margin-top: 15px; margin-bottom: 5px;">Applet Transition Effect:</label>
+        <select id="transition-effect" name="transition_effect" style="width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; box-sizing: border-box; background-color: #fff; color: #000;">
+            <!-- Options will be populated by JavaScript -->
+        </select>
     
         <label for="timezone-offset" style="display: block; margin-top: 15px; margin-bottom: 5px;">Timezone Offset (hours from UTC):</label>
         <input type="number" id="timezone-offset" name="timezone_offset" min="-12" max="14" step="1" value="{timezone_offset}" required>
         <p style="font-size: 12px; color: #ccc;">Valid values between -12 and +14</p>
-
-        <label for="transition-effect" style="display: block; margin-top: 15px; margin-bottom: 5px;">Transition Effect:</label>
-        <select id="transition-effect" name="transition_effect" style="width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; box-sizing: border-box; background-color: #fff; color: #000;">
-            <!-- Options will be populated by JavaScript -->
-        </select>
 
         <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
     </form>

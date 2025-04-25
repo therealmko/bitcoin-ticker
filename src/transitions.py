@@ -139,7 +139,7 @@ async def wipe_in_from_black_ltr(screen_manager, applet_to_draw, duration_ms=DEF
 TRANSITIONS = {
     "None": (None, None),
     "Fade": (fade_out, fade_in),
-    "Wipe LTR": (wipe_out_to_black_ltr, wipe_in_from_black_ltr),
+    "Wipe Left-To-Right": (wipe_out_to_black_ltr, wipe_in_from_black_ltr),
     # Add more transitions here in the future
 }
 
