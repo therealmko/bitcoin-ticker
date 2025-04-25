@@ -40,7 +40,8 @@ async def main() -> None:
         ap_mode_applet = ap_applet.ApApplet(screen_manager, wifi_manager)
         asyncio.create_task(applet_manager_instance._run_applet(ap_mode_applet, is_system_applet=True))
 
-    web_server = AsyncWebServer(wifi_manager, applet_manager_instance)
+    # Pass the single config_manager instance to the web server
+    web_server = AsyncWebServer(wifi_manager, applet_manager_instance, config_manager)
     asyncio.create_task(web_server.start_web_server())
 
     # Keep the main event loop alive
