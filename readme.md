@@ -59,6 +59,7 @@ To build your own Satoshi Radio Ticker, you'll need:
 ### Pro-tips
 - To access the Settings page after initial setup, simply browse to the ticker's IP address on your local network. There's no need to connect directly to the ticker.
 - You can add multiple WiFi networks! This makes it convenient to connect the ticker to both your home network and your phone's hotspot.
+- You can change settings on the Settings page related to your timezone, duration of applets on screen and some cool applet transition effects. 
 - You can fork the code and add your own customizations! After you're done, just use the makefile to upload your modified code to the Pi. See the development section below for details.
 - Need to reset the Raspberry Pi? There is a whole in the enclosure. Just use a paperclip, you can easily reach the BOOTSEL button.
 
@@ -100,6 +101,7 @@ src/
 ├── urllib_urequest.py          # HTTP client
 ├── web_server.py               # Configuration web interface
 ├── wifi_manager.py             # Network connection manager
+├── transitions.py              # Utility to help manage applet transition effects
 └── config.py                   # Utility to help manage configurations
 ```
 
