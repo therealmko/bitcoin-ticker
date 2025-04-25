@@ -166,7 +166,7 @@ class AppletManager:
             print(f"[AppletManager] Stopping applet: {self.current_applet.__class__.__name__}")
             # Get the *current* transition setting just before potentially running the exit transition
             selected_transition_name = self.config_manager.get_transition_effect()
-            print(f"[AppletManager] Read transition for exit: '{selected_transition_name}'") # ADDED LOGGING
+            # print(f"[AppletManager] Read transition for exit: '{selected_transition_name}'") # REMOVED LOGGING
             exit_transition, _ = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need exit func here
             if exit_transition:
                 print(f"[AppletManager] Running exit transition: {selected_transition_name}")
@@ -186,7 +186,7 @@ class AppletManager:
         # --- Transition In ---
         # Get the *current* transition setting just before potentially running the entry transition
         selected_transition_name = self.config_manager.get_transition_effect()
-        print(f"[AppletManager] Read transition for entry: '{selected_transition_name}'") # ADDED LOGGING
+        # print(f"[AppletManager] Read transition for entry: '{selected_transition_name}'") # REMOVED LOGGING
         _, entry_transition = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need entry func here
 
         if entry_transition:
