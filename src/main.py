@@ -24,7 +24,8 @@ async def main() -> None:
     data_manager = DataManager()
     wifi_manager = WiFiManager()
 
-    applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager)
+    # Pass the single config_manager instance
+    applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager, config_manager)
     splash_applet = applet_manager.SplashApplet(screen_manager)
     print("[Main] Starting splash applet.")
     await applet_manager_instance.run_applet_once(splash_applet)
@@ -39,7 +40,8 @@ async def main() -> None:
         ap_mode_applet = ap_applet.ApApplet(screen_manager, wifi_manager)
         asyncio.create_task(applet_manager_instance._run_applet(ap_mode_applet, is_system_applet=True))
 
-    web_server = AsyncWebServer(wifi_manager, applet_manager_instance)
+    # Pass the single config_manager instance to the web server
+    web_server = AsyncWebServer(wifi_manager, applet_manager_instance, config_manager)
     asyncio.create_task(web_server.start_web_server())
 
     # Keep the main event loop alive

@@ -4,6 +4,7 @@ from system_applets import base_applet
 import uasyncio as asyncio
 import json
 import time
+import transitions # Import the new transitions module
 
 from system_applets.splash_applet import SplashApplet
 from system_applets.error_applet import ErrorApplet
@@ -21,10 +22,12 @@ from config import ConfigManager
 
 
 class AppletManager:
-    def __init__(self, screen_manager, data_manager, wifi_manager) -> None:
+    # Add config_manager parameter
+    def __init__(self, screen_manager, data_manager, wifi_manager, config_manager: ConfigManager) -> None:
         self.screen_manager = screen_manager
         self.data_manager = data_manager
         self.wifi_manager = wifi_manager
+        self.config_manager = config_manager # Use the passed instance
 
         self.current_applet = None
         self.current_index = 0
@@ -33,7 +36,8 @@ class AppletManager:
         self.next_applet_data = None
 
         gc.collect()
-        self.config_manager = ConfigManager()
+        # Remove instantiation here, use the passed instance
+        # self.config_manager = ConfigManager()
 
         self._register_applets()
 
@@ -86,13 +90,11 @@ class AppletManager:
                 data = json.load(f)
                 print(f"[AppletManager] Loaded applets from {filename}")
         except OSError:
-            print(f"[AppletManager] Failed to load applets from {filename}. Starting with defaults.")
-            data = []
-            for applet_name in self.all_applets.keys():
-                data.append({"name": applet_name, "enabled": True})
+            # Don't create defaults, just return empty on file read error
             print(f"[AppletManager] WARNING: Could not read {filename}. Returning empty applet list.")
             return []
         except ValueError:
+            # Return empty on JSON parsing error
             print(f"[AppletManager] Failed to parse JSON from {filename}. Invalid format.")
             print(f"[AppletManager] WARNING: Could not parse {filename}. Returning empty applet list.")
             return []
@@ -109,17 +111,22 @@ class AppletManager:
             if not applet_class:
                 print(f"[AppletManager] Applet not found: {applet_name}")
                 continue
-            applets.append(applet_class(self.screen_manager, self.data_manager))
+            # Instantiate the applet
+            applet_instance = applet_class(self.screen_manager, self.data_manager)
+            # Register its data requirements with the DataManager
+            applet_instance.register()
+            applets.append(applet_instance)
         return applets
 
     def _get_applet_class(self, name):
         return self.all_applets.get(name)
 
     async def start_applets(self) -> None:
-        enabled_applets = self.applets
+        # Removed redundant enabled_applets = self.applets
+        # The loop below checks self.applets directly
 
-        if not enabled_applets:
-            print("[AppletManager] No applets registered. Displaying error.")
+        if not self.applets: # Check initial state
+            print("[AppletManager] No applets registered or enabled at start. Displaying error.")
             await self._display_error("No applets registered or enabled.")
             return
 
@@ -153,15 +160,60 @@ class AppletManager:
 
     async def _run_applet(self, applet, is_system_applet: bool = False) -> None:
         gc.collect()
-        print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
 
+        # --- Transition Out ---
         if self.current_applet:
+            print(f"[AppletManager] Stopping applet: {self.current_applet.__class__.__name__}")
+            # Get the *current* transition setting just before potentially running the exit transition
+            selected_transition_name = self.config_manager.get_transition_effect()
+            # print(f"[AppletManager] Read transition for exit: '{selected_transition_name}'") # REMOVED LOGGING
+            exit_transition, _ = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need exit func here
+            if exit_transition:
+                print(f"[AppletManager] Running exit transition: {selected_transition_name}")
+                await exit_transition(self.screen_manager) # Run exit transition before stopping
             self.current_applet.stop()
             gc.collect()
 
-        self.screen_manager.clear()
+        # --- Start New Applet ---
+        print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
+        self.screen_manager.clear() # Clear screen before starting new applet or entry transition
         self.current_applet = applet
         self.current_applet.start()
+
+        # Prepare the applet's data *before* the transition starts
+        await self.current_applet.update()
+
+        # --- Transition In ---
+        # Get the *current* transition setting just before potentially running the entry transition
+        selected_transition_name = self.config_manager.get_transition_effect()
+        # print(f"[AppletManager] Read transition for entry: '{selected_transition_name}'") # REMOVED LOGGING
+        _, entry_transition = transitions.TRANSITIONS.get(selected_transition_name, (None, None)) # Only need entry func here
+
+        if entry_transition:
+            print(f"[AppletManager] Running entry transition: {selected_transition_name}")
+            # Check if the transition name indicates a wipe effect requiring the applet instance
+            if "Wipe" in selected_transition_name:
+                 # All Wipe transitions require the applet instance to draw during the wipe
+                await entry_transition(self.screen_manager, self.current_applet)
+            elif selected_transition_name == "Fade":
+                # Fade In draws the first frame, then fades the backlight
+                await self.current_applet.draw() # Draw first frame
+                self.screen_manager.update()      # Update display buffer
+                await entry_transition(self.screen_manager) # Run fade_in
+            else:
+                 # Handle other potential future transitions or default to just drawing
+                 # Check against the actual key used in transitions.py
+                 print(f"[AppletManager] Unknown or unsupported entry transition '{selected_transition_name}', drawing directly.")
+                 await self.current_applet.draw()
+                 self.screen_manager.update()
+                 self.screen_manager.display.set_backlight(1.0) # Ensure backlight is on
+        else:
+            # No transition ("None")
+            print("[AppletManager] No entry transition, drawing directly.")
+            self.screen_manager.display.set_backlight(1.0) # Ensure backlight is on
+            await self.current_applet.draw() # Draw the applet content
+            self.screen_manager.update() # Update display buffer
+
 
         applet_duration = max(3, self.config_manager.get_applet_duration())
         print(f"[AppletManager] Using applet duration: {applet_duration} seconds")

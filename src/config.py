@@ -11,11 +11,12 @@ class ConfigManager:
         self.config = {}
         self.filename = "config.json"
         self.defaults = {
-            "applet_duration": 10,  # Default duration in seconds
-            "timezone_offset": 0     # Default timezone offset (UTC)
+            "applet_duration": 10,      # Default duration in seconds
+            "timezone_offset": 0,       # Default timezone offset (UTC)
+            "transition_effect": "None" # Default transition effect
         }
         self.load_config()
-    
+
     def load_config(self):
         """Load configuration from file or create with defaults if it doesn't exist"""
         try:
@@ -79,3 +80,32 @@ class ConfigManager:
         except (ValueError, TypeError):
             # If conversion fails, return the current value
             return self.get_timezone_offset()
+
+    def get_transition_effect(self):
+        """Get the current transition effect name"""
+        # Import locally to avoid circular dependency if transitions need config
+        from transitions import AVAILABLE_TRANSITIONS
+        effect = self.config.get("transition_effect", self.defaults["transition_effect"])
+        # Ensure the stored effect is still valid
+        if effect not in AVAILABLE_TRANSITIONS:
+            print(f"[ConfigManager] Invalid transition '{effect}' found. Reverting to default.")
+            return self.defaults["transition_effect"]
+        return effect
+
+    def set_transition_effect(self, effect_name):
+        """
+        Set and validate the transition effect.
+
+        :param effect_name: The name of the transition effect (e.g., "None", "Fade")
+        :return: The actual effect name that was set after validation
+        """
+        # Import locally to avoid circular dependency
+        from transitions import AVAILABLE_TRANSITIONS
+        if effect_name in AVAILABLE_TRANSITIONS:
+            self.config["transition_effect"] = effect_name
+            self.save_config()
+            return effect_name
+        else:
+            print(f"[ConfigManager] Invalid transition effect '{effect_name}'. Not saving.")
+            # Return the current valid value instead of saving an invalid one
+            return self.get_transition_effect()
