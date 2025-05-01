@@ -1,5 +1,6 @@
 import gc
 import os
+import uerrno
 from system_applets import base_applet
 import uasyncio as asyncio
 import json
@@ -84,19 +85,39 @@ class AppletManager:
 
         return default_data
 
-    def load_applets(self, filename="applets.json"):
+    def _create_default_applets_file(self, filename="applets.json"):
+        """Creates a default applets.json file with bitcoin_applet enabled."""
+        print(f"[AppletManager] Creating default applet file: {filename}")
+        default_data = [{"name": "bitcoin_applet", "enabled": True}]
         try:
+            with open(filename, "w") as f:
+                json.dump(default_data, f)
+            print(f"[AppletManager] Default {filename} created successfully.")
+            return default_data # Return the data we just wrote
+        except Exception as e:
+            print(f"[AppletManager] ERROR: Failed to create default {filename}: {e}")
+            return [] # Return empty list on creation failure
+
+    def load_applets(self, filename="applets.json"):
+        data = None
+        try:
+            # Check if file exists first without trying to open it directly
+            os.stat(filename)
+            # File exists, try to open and load
             with open(filename, "r") as f:
                 data = json.load(f)
                 print(f"[AppletManager] Loaded applets from {filename}")
-        except OSError:
-            # Don't create defaults, just return empty on file read error
-            print(f"[AppletManager] WARNING: Could not read {filename}. Returning empty applet list.")
-            return []
+        except OSError as e:
+            if e.args[0] == uerrno.ENOENT: # Check if the error is "No such file or directory"
+                print(f"[AppletManager] {filename} not found.")
+                data = self._create_default_applets_file(filename)
+            else:
+                # Handle other potential OS errors (permissions, etc.)
+                print(f"[AppletManager] WARNING: OS error reading {filename}: {e}. Returning empty applet list.")
+                return []
         except ValueError:
-            # Return empty on JSON parsing error
-            print(f"[AppletManager] Failed to parse JSON from {filename}. Invalid format.")
-            print(f"[AppletManager] WARNING: Could not parse {filename}. Returning empty applet list.")
+            # Handle JSON parsing errors
+            print(f"[AppletManager] WARNING: Failed to parse JSON from {filename}. Invalid format. Returning empty applet list.")
             return []
 
         applets = []
