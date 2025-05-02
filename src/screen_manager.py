@@ -116,8 +116,20 @@ class ScreenManager:
             )
             date = date_str
 
-        footer_text = "Last updated: " + (date or "N/A")
-        self.draw_text(footer_text, 15, self.height - 30, scale=1, color=self.theme['FOOTER_COLOR'])
+        # Draw "Last updated" text on the left
+        last_updated_text = "Last updated: " + (date or "N/A")
+        footer_y = self.height - 30
+        footer_color = self.theme['FOOTER_COLOR']
+        self.draw_text(last_updated_text, 15, footer_y, scale=1, color=footer_color)
+
+        # Draw IP address on the right
+        ip_address = "IP: N/A"
+        if self.config_manager:
+            ip_address = "IP: " + self.config_manager.get_ip_address()
+
+        ip_text_width = self.display.measure_text(ip_address, scale=1)
+        ip_x = self.width - ip_text_width - 15 # 15px padding from right edge
+        self.draw_text(ip_address, ip_x, footer_y, scale=1, color=footer_color)
 
     def draw_label_and_value(self, label, value, x, y, scale=2):
         self.draw_text(f"{label}:", x, y, scale, color=self.theme['ACCENT_FONT_COLOR'])

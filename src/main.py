@@ -30,12 +30,23 @@ async def main() -> None:
     print("[Main] Starting splash applet.")
     await applet_manager_instance.run_applet_once(splash_applet)
 
-     # Attempt to connect to known Wi-Fi networks
+    # Attempt to connect to known Wi-Fi networks
     if wifi_manager.connect_to_saved_networks():
         print("[Main] Connected to a known Wi-Fi network.")
+        # Store the IP address after successful connection
+        ip_address = "N/A"
+        if wifi_manager.wlan.isconnected():
+            ip_config = wifi_manager.wlan.ifconfig()
+            ip_address = ip_config[0] if ip_config and len(ip_config) > 0 else "N/A"
+            print(f"[Main] Device IP Address: {ip_address}")
+        else:
+             print("[Main] WLAN disconnected unexpectedly after connect attempt.")
+        config_manager.set_ip_address(ip_address)
         asyncio.create_task(applet_manager_instance.start_applets())
     else:
         print("[Main] No saved networks found or unable to connect. Setting up AP mode.")
+        # Optionally clear or set a specific IP when in AP mode
+        config_manager.set_ip_address("AP Mode") # Or keep the last known IP / "N/A"
         wifi_manager.setup_ap()
         ap_mode_applet = ap_applet.ApApplet(screen_manager, wifi_manager)
         asyncio.create_task(applet_manager_instance._run_applet(ap_mode_applet, is_system_applet=True))
