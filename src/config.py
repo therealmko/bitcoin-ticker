@@ -13,7 +13,8 @@ class ConfigManager:
         self.defaults = {
             "applet_duration": 10,      # Default duration in seconds
             "timezone_offset": 0,       # Default timezone offset (UTC)
-            "transition_effect": "None" # Default transition effect
+            "transition_effect": "None", # Default transition effect
+            "ip_address": "N/A"         # Default IP address
         }
         self.load_config()
 
@@ -80,6 +81,26 @@ class ConfigManager:
         except (ValueError, TypeError):
             # If conversion fails, return the current value
             return self.get_timezone_offset()
+
+    def get_ip_address(self):
+        """Get the last known IP address"""
+        return self.config.get("ip_address", self.defaults["ip_address"])
+
+    def set_ip_address(self, ip_address):
+        """
+        Set the device's IP address.
+
+        :param ip_address: The IP address string (e.g., "192.168.1.100")
+        :return: The IP address that was set
+        """
+        if isinstance(ip_address, str):
+            self.config["ip_address"] = ip_address
+            self.save_config()
+            return ip_address
+        else:
+            print(f"[ConfigManager] Invalid IP address type '{type(ip_address)}'. Not saving.")
+            # Return the current valid value
+            return self.get_ip_address()
 
     def get_transition_effect(self):
         """Get the current transition effect name"""
