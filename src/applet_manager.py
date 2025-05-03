@@ -83,20 +83,6 @@ class AppletManager:
             name = entry["name"]
             entry["enabled"] = applet_map.get(name, False)
 
-        return default_data
-
-    def _create_default_applets_file(self, filename="applets.json"):
-        """Creates a default applets.json file with bitcoin_applet enabled."""
-        print(f"[AppletManager] Creating default applet file: {filename}")
-        default_data = [{"name": "bitcoin_applet", "enabled": True}]
-        try:
-            with open(filename, "w") as f:
-                json.dump(default_data, f)
-            print(f"[AppletManager] Default {filename} created successfully.")
-            return default_data # Return the data we just wrote
-        except Exception as e:
-            print(f"[AppletManager] ERROR: Failed to create default {filename}: {e}")
-            return [] # Return empty list on creation failure
 
     def load_applets(self, filename="applets.json"):
         data = None
@@ -109,8 +95,10 @@ class AppletManager:
                 print(f"[AppletManager] Loaded applets from {filename}")
         except OSError as e:
             if e.args[0] == uerrno.ENOENT: # Check if the error is "No such file or directory"
-                print(f"[AppletManager] {filename} not found.")
-                data = self._create_default_applets_file(filename)
+                # File not found - Initializer should have created it.
+                # If it's still not here, something went wrong. Log error and return empty.
+                print(f"[AppletManager] ERROR: {filename} not found, even after initialization step. Returning empty applet list.")
+                return []
             else:
                 # Handle other potential OS errors (permissions, etc.)
                 print(f"[AppletManager] WARNING: OS error reading {filename}: {e}. Returning empty applet list.")

@@ -9,6 +9,7 @@ from web_server import AsyncWebServer
 from applet_manager import AppletManager
 from system_applets import ap_applet
 from config import ConfigManager
+from initialization import Initializer # Import the new Initializer
 
 RGBLED(6, 7, 8).set_rgb(0, 0, 0)
 
@@ -42,9 +43,12 @@ async def main() -> None:
         else:
              print("[Main] WLAN disconnected unexpectedly after connect attempt.")
         config_manager.set_ip_address(ip_address)
+
+        # Start the main applet loop *after* initialization
         asyncio.create_task(applet_manager_instance.start_applets())
     else:
         print("[Main] No saved networks found or unable to connect. Setting up AP mode.")
+        # Optionally run parts of initializer even in AP mode? For now, only run in STA mode.
         # Optionally clear or set a specific IP when in AP mode
         config_manager.set_ip_address("AP Mode") # Or keep the last known IP / "N/A"
         wifi_manager.setup_ap()
