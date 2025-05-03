@@ -123,60 +123,112 @@ class Initializer:
             ath_usd = None
             ath_date_usd = None
             buffer = ""
-            in_market_data = False
-            brace_level = 0
+            found_ath = False
+            found_ath_date = False
+            chunk_size = 256 # Keep chunk size relatively small
+            overlap_size = 50 # How much of the previous buffer to keep for searching across chunks
 
             try:
                 with open(self.ATH_DUMP_FILE, "r") as f:
                     while True:
-                        chunk = f.read(256) # Read small chunks
+                        # Maintain overlap between chunks
+                        if len(buffer) > overlap_size:
+                            buffer = buffer[-overlap_size:]
+                        else:
+                            # Keep the whole buffer if it's smaller than overlap
+                            pass 
+                            
+                        chunk = f.read(chunk_size)
+                        if not chunk:
+                            # End of file, process remaining buffer one last time
+                            if not (found_ath and found_ath_date):
+                                 print("[Initializer] End of file reached, processing final buffer.")
+                            else:
+                                break # Already found both, exit loop
+                        
+                        buffer += chunk
+                        gc.collect()
+
+                        # --- Try to find and parse "ath" object ---
+                        if not found_ath:
+                            start_key = '"ath":{'
+                            start_index = buffer.find(start_key)
+                            if start_index != -1:
+                                print("[Initializer] Found 'ath':{")
+                                obj_start_index = start_index + len(start_key) - 1 # Index of the opening brace {
+                                brace_level = 0
+                                end_index = -1
+                                # Find the matching closing brace for the 'ath' object
+                                for i in range(obj_start_index, len(buffer)):
+                                    if buffer[i] == '{':
+                                        brace_level += 1
+                                    elif buffer[i] == '}':
+                                        brace_level -= 1
+                                        if brace_level == 0:
+                                            end_index = i
+                                            break
+                                
+                                if end_index != -1:
+                                    ath_obj_str = buffer[obj_start_index : end_index + 1]
+                                    print(f"[Initializer] Extracted ATH object string: {ath_obj_str}")
+                                    try:
+                                        ath_data = json.loads(ath_obj_str)
+                                        ath_usd = ath_data.get("usd")
+                                        if ath_usd is not None:
+                                            print(f"[Initializer] Parsed ATH USD: {ath_usd}")
+                                            found_ath = True
+                                        else:
+                                            print("[Initializer] 'usd' key not found in ATH object.")
+                                    except ValueError as e:
+                                        print(f"[Initializer] JSON parsing error for ATH object: {e}")
+                                    except Exception as e:
+                                         print(f"[Initializer] Unexpected error parsing ATH object: {e}")
+                                    # Don't trim buffer here, ath_date might be close
+
+                        # --- Try to find and parse "ath_date" object ---
+                        if not found_ath_date:
+                            start_key = '"ath_date":{'
+                            start_index = buffer.find(start_key)
+                            if start_index != -1:
+                                print("[Initializer] Found 'ath_date':{")
+                                obj_start_index = start_index + len(start_key) - 1 # Index of the opening brace {
+                                brace_level = 0
+                                end_index = -1
+                                # Find the matching closing brace for the 'ath_date' object
+                                for i in range(obj_start_index, len(buffer)):
+                                    if buffer[i] == '{':
+                                        brace_level += 1
+                                    elif buffer[i] == '}':
+                                        brace_level -= 1
+                                        if brace_level == 0:
+                                            end_index = i
+                                            break
+
+                                if end_index != -1:
+                                    ath_date_obj_str = buffer[obj_start_index : end_index + 1]
+                                    print(f"[Initializer] Extracted ATH Date object string: {ath_date_obj_str}")
+                                    try:
+                                        ath_date_data = json.loads(ath_date_obj_str)
+                                        ath_date_usd = ath_date_data.get("usd")
+                                        if ath_date_usd is not None:
+                                            print(f"[Initializer] Parsed ATH Date USD: {ath_date_usd}")
+                                            found_ath_date = True
+                                        else:
+                                            print("[Initializer] 'usd' key not found in ATH Date object.")
+                                    except ValueError as e:
+                                        print(f"[Initializer] JSON parsing error for ATH Date object: {e}")
+                                    except Exception as e:
+                                         print(f"[Initializer] Unexpected error parsing ATH Date object: {e}")
+                                    # Don't trim buffer here either
+
+                        # If we found both, we can stop reading the file
+                        if found_ath and found_ath_date:
+                            print("[Initializer] Found both ATH and ATH Date data. Stopping parse.")
+                            break
+                        
+                        # If end of file was reached in this iteration, break after processing
                         if not chunk:
                             break
-
-                        if not in_market_data:
-                            # Search for the start of the market_data object
-                            key_index = chunk.find('"market_data":{')
-                            if key_index != -1:
-                                in_market_data = True
-                                buffer = chunk[key_index + len('"market_data":'):] # Start buffer after the key
-                                brace_level = 1 # We start inside the first {
-                                print("[Initializer] Found start of market_data")
-                        else:
-                            buffer += chunk
-
-                        # Process buffer only if we are inside market_data
-                        if in_market_data:
-                            # Simple brace counting (might be fragile with nested strings containing braces)
-                            for char in chunk: # Process the newly added chunk
-                                if char == '{':
-                                    brace_level += 1
-                                elif char == '}':
-                                    brace_level -= 1
-
-                            # Check if we found the end of the market_data object
-                            if brace_level == 0:
-                                print("[Initializer] Found end of market_data object.")
-                                # Attempt to parse just the market_data buffer
-                                try:
-                                    # The buffer should now contain the complete market_data object string
-                                    market_data_json = buffer
-                                    # print(f"[Initializer] DEBUG: Final buffer content (first 500): '{market_data_json[:500]}'") # Optional: Keep for further debugging if needed
-                                    market_data = json.loads(market_data_json)
-                                    ath_data = market_data.get("ath", {})
-                                    ath_usd = ath_data.get("usd")
-                                    ath_date_data = market_data.get("ath_date", {})
-                                    ath_date_usd = ath_date_data.get("usd")
-                                    print(f"[Initializer] Extracted ATH USD: {ath_usd}, Date: {ath_date_usd}")
-                                    break # Exit file reading loop
-                                except ValueError as json_e:
-                                    print(f"[Initializer] JSON parsing error for market_data buffer: {json_e}")
-                                    # print(f"Failed buffer content: {market_data_json}") # Debug: print failed buffer
-                                    # Could not parse, maybe brace counting failed? Stop processing.
-                                    break
-                                except Exception as parse_e:
-                                     print(f"[Initializer] Unexpected error parsing market_data buffer: {parse_e}")
-                                     break
-                        gc.collect() # GC frequently during parsing
 
             except Exception as read_e:
                 print(f"[Initializer] Error reading/processing {self.ATH_DUMP_FILE}: {read_e}")
