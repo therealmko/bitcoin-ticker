@@ -27,6 +27,9 @@ async def main() -> None:
 
     # Pass the single config_manager instance
     applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager, config_manager)
+    # Create Initializer instance
+    initializer = Initializer(screen_manager, config_manager)
+
     splash_applet = applet_manager.SplashApplet(screen_manager)
     print("[Main] Starting splash applet.")
     await applet_manager_instance.run_applet_once(splash_applet)
@@ -34,6 +37,11 @@ async def main() -> None:
     # Attempt to connect to known Wi-Fi networks
     if wifi_manager.connect_to_saved_networks():
         print("[Main] Connected to a known Wi-Fi network.")
+
+        # --- Run Initializer ---
+        await initializer.run_initialization()
+        # ---------------------
+
         # Store the IP address after successful connection
         ip_address = "N/A"
         if wifi_manager.wlan.isconnected():
