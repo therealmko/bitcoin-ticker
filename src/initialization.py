@@ -192,10 +192,7 @@ class Initializer:
                 await self._show_initializing_screen("ATH Parse Fail")
                 await asyncio.sleep(2)
 
-        except urequests.HTTPError as e:
-             print(f"[Initializer] HTTPError fetching ATH data: {e}")
-             await self._show_initializing_screen(f"ATH HTTP Err")
-             await asyncio.sleep(2)
+        # Removed specific urequests.HTTPError catch, rely on status code check and generic Exception
         except MemoryError:
             print("[Initializer] MemoryError during ATH fetch/process. Pico may not have enough RAM.")
             await self._show_initializing_screen("ATH Mem Error")
