@@ -85,32 +85,88 @@ class Initializer:
             # WARNING: This reads the entire response into memory.
             # If this causes MemoryError, a streaming approach is needed.
             print(f"[Initializer] Requesting data from {self.ATH_API_URL}")
-            response = urequests.urlopen(self.ATH_API_URL)
+            response_stream = urequests.urlopen(self.ATH_API_URL)
             gc.collect()
 
-            # Check status code
-            if response.status_code != 200:
-                print(f"[Initializer] Error fetching ATH data: Status {response.status_code}")
-                await self._show_initializing_screen(f"ATH Error {response.status_code}")
+            # --- Handle potential raw socket return for HTTPS ---
+            status_code = None
+            headers_processed = False
+            body_stream = None
+
+            if hasattr(response_stream, 'readline'): # Check if it's a stream-like object
+                print("[Initializer] Reading status line from stream...")
+                status_line = response_stream.readline()
+                gc.collect()
+                if status_line:
+                    status_line_str = status_line.decode('utf-8').strip()
+                    print(f"[Initializer] Status Line: {status_line_str}")
+                    parts = status_line_str.split(" ")
+                    if len(parts) > 1 and parts[0].startswith("HTTP/"):
+                        try:
+                            status_code = int(parts[1])
+                        except ValueError:
+                            print("[Initializer] Could not parse status code from status line.")
+                    else:
+                         print("[Initializer] Unexpected status line format.")
+
+                    # Read and discard headers
+                    while True:
+                        header_line = response_stream.readline()
+                        if not header_line or header_line == b'\r\n':
+                            break
+                    headers_processed = True
+                    body_stream = response_stream # Use the same stream for the body
+                else:
+                    print("[Initializer] Failed to read status line.")
+            else:
+                # Assume it's a CPython-like response object (fallback)
+                 if hasattr(response_stream, 'status_code'):
+                     status_code = response_stream.status_code
+                     body_stream = response_stream.raw # Or appropriate attribute
+                 else:
+                     print("[Initializer] Unrecognized response object type.")
+
+
+            # --- Check Status Code ---
+            if status_code != 200:
+                print(f"[Initializer] Error fetching ATH data: Status {status_code or 'Unknown'}")
+                await self._show_initializing_screen(f"ATH Error {status_code or '?'}")
                 await asyncio.sleep(2)
+                if response_stream:
+                    response_stream.close()
                 return
 
-            print("[Initializer] Saving ATH response to temporary file...")
-            # Save to temporary file first to free memory before parsing attempt
-            with open(self.ATH_DUMP_FILE, "wb") as f:
-                # Read in chunks to potentially reduce peak memory slightly
-                chunk_size = 512
-                while True:
-                    chunk = response.raw.read(chunk_size)
-                    if not chunk:
-                        break
-                    f.write(chunk)
-                    gc.collect() # Aggressive GC during write
+            if not body_stream:
+                 print("[Initializer] Error: Could not get response body stream.")
+                 await self._show_initializing_screen(f"ATH Stream Err")
+                 await asyncio.sleep(2)
+                 if response_stream:
+                     response_stream.close()
+                 return
 
-            response.close() # Close response to free memory
-            response = None
-            gc.collect()
-            print(f"[Initializer] Saved response to {self.ATH_DUMP_FILE}")
+            # --- Save Response Body ---
+            print("[Initializer] Saving ATH response body to temporary file...")
+            try:
+                with open(self.ATH_DUMP_FILE, "wb") as f:
+                    chunk_size = 512
+                    while True:
+                        chunk = body_stream.read(chunk_size)
+                        if not chunk:
+                            break
+                        f.write(chunk)
+                        gc.collect() # Aggressive GC during write
+                print(f"[Initializer] Saved response body to {self.ATH_DUMP_FILE}")
+            except Exception as write_e:
+                 print(f"[Initializer] Error writing response body: {write_e}")
+                 await self._show_initializing_screen(f"ATH Write Err")
+                 await asyncio.sleep(2)
+                 # Still try to close stream and cleanup in finally
+            finally:
+                 if response_stream: # Close the original stream/socket object
+                     response_stream.close()
+                 response_stream = None # Ensure it's cleared
+                 body_stream = None # Clear reference
+                 gc.collect()
 
             # --- Memory-Efficient Parsing Attempt ---
             print(f"[Initializer] Parsing {self.ATH_DUMP_FILE} for ATH data...")
@@ -209,8 +265,12 @@ class Initializer:
                     print(f"[Initializer] Removed temporary file {self.ATH_DUMP_FILE}")
                 except Exception as e:
                     print(f"[Initializer] Error removing temporary file {self.ATH_DUMP_FILE}: {e}")
-            if response:
-                response.close()
+            # Ensure response_stream is closed if it wasn't already in the try block
+            if response_stream:
+                try:
+                    response_stream.close()
+                except Exception as close_e:
+                    print(f"[Initializer] Error closing response stream in finally: {close_e}")
             gc.collect()
 
 
