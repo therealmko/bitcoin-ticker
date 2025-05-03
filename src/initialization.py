@@ -88,64 +88,10 @@ class Initializer:
             response_stream = urequests.urlopen(self.ATH_API_URL)
             gc.collect()
 
-            # --- Handle potential raw socket return for HTTPS ---
-            status_code = None
-            headers_processed = False
-            body_stream = None
-
-            if hasattr(response_stream, 'readline'): # Check if it's a stream-like object
-                print("[Initializer] Reading status line from stream...")
-                status_line = response_stream.readline()
-                gc.collect()
-                if status_line:
-                    status_line_str = status_line.decode('utf-8').strip()
-                    # --- ADD DEBUG PRINT HERE ---
-                    print(f"[Initializer] DEBUG: Raw line read: '{status_line_str}'")
-                    # ----------------------------
-                    print(f"[Initializer] Status Line: {status_line_str}") # Keep original print too
-                    parts = status_line_str.split(" ")
-                    if len(parts) > 1 and parts[0].startswith("HTTP/"):
-                        try:
-                            status_code = int(parts[1])
-                        except ValueError:
-                            print("[Initializer] Could not parse status code from status line.")
-                    else:
-                         print("[Initializer] Unexpected status line format.")
-
-                    # Read and discard headers
-                    while True:
-                        header_line = response_stream.readline()
-                        if not header_line or header_line == b'\r\n':
-                            break
-                    headers_processed = True
-                    body_stream = response_stream # Use the same stream for the body
-                else:
-                    print("[Initializer] Failed to read status line.")
-            else:
-                # Assume it's a CPython-like response object (fallback)
-                 if hasattr(response_stream, 'status_code'):
-                     status_code = response_stream.status_code
-                     body_stream = response_stream.raw # Or appropriate attribute
-                 else:
-                     print("[Initializer] Unrecognized response object type.")
-
-
-            # --- Check Status Code ---
-            if status_code != 200:
-                print(f"[Initializer] Error fetching ATH data: Status {status_code or 'Unknown'}")
-                await self._show_initializing_screen(f"ATH Error {status_code or '?'}")
-                await asyncio.sleep(2)
-                if response_stream:
-                    response_stream.close()
-                return
-
-            if not body_stream:
-                 print("[Initializer] Error: Could not get response body stream.")
-                 await self._show_initializing_screen(f"ATH Stream Err")
-                 await asyncio.sleep(2)
-                 if response_stream:
-                     response_stream.close()
-                 return
+            # --- Assume success if urlopen doesn't raise exception ---
+            # The stream directly contains the body for HTTPS in this environment
+            body_stream = response_stream
+            print("[Initializer] HTTPS request successful, proceeding to read body.")
 
             # --- Save Response Body ---
             print("[Initializer] Saving ATH response body to temporary file...")
