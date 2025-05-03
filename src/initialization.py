@@ -158,8 +158,11 @@ class Initializer:
                                 print("[Initializer] Found end of market_data object.")
                                 # Attempt to parse just the market_data buffer
                                 try:
-                                    market_data_json = "{" + buffer.rstrip().rstrip(',') + "}" # Re-add braces, remove trailing comma if any
-                                    # print(f"Attempting to parse buffer: {market_data_json[:200]}...") # Debug: print start of buffer
+                                    # Construct the JSON string carefully. The buffer should contain the content *inside* the main braces.
+                                    market_data_json = "{" + buffer + "}"
+                                    # --- ADD DEBUG PRINT ---
+                                    print(f"[Initializer] DEBUG: Attempting to parse JSON string (first 500 chars): '{market_data_json[:500]}'")
+                                    # -----------------------
                                     market_data = json.loads(market_data_json)
                                     ath_data = market_data.get("ath", {})
                                     ath_usd = ath_data.get("usd")
