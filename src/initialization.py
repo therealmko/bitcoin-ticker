@@ -99,7 +99,10 @@ class Initializer:
                 gc.collect()
                 if status_line:
                     status_line_str = status_line.decode('utf-8').strip()
-                    print(f"[Initializer] Status Line: {status_line_str}")
+                    # --- ADD DEBUG PRINT HERE ---
+                    print(f"[Initializer] DEBUG: Raw line read: '{status_line_str}'")
+                    # ----------------------------
+                    print(f"[Initializer] Status Line: {status_line_str}") # Keep original print too
                     parts = status_line_str.split(" ")
                     if len(parts) > 1 and parts[0].startswith("HTTP/"):
                         try:
