@@ -1,11 +1,8 @@
 from screen_manager import ScreenManager
 from system_applets.base_applet import BaseApplet
-import ujson as json
-import os
 from data_manager import DataManager
 from micropython import const
 import gc
-import uerrno
 
 class bitcoin_applet(BaseApplet):
     TTL = const(120)
@@ -17,12 +14,12 @@ class bitcoin_applet(BaseApplet):
         self.current_data = None # Store data fetched in update()
         self.register()
 
-   def start(self):
-       # Reset data when applet starts
-       self.current_data = None
-       super().start()
+    def start(self):
+        # Reset data when applet starts
+        self.current_data = None
+        super().start()
 
-   def stop(self):
+    def stop(self):
         # No need for drawn flag handling
         super().stop()
 
@@ -33,7 +30,9 @@ class bitcoin_applet(BaseApplet):
     async def update(self):
         # Fetch data in update
         self.current_data = self.data_manager.get_cached_data(self.api_url)
+        # print(f"[bitcoin_applet] Updated data: {self.current_data}") # Optional debug
         gc.collect()
+        # No need to call super().update()
 
     async def draw(self):
         # Draw uses data fetched by update()

@@ -74,7 +74,7 @@ class ath_applet(BaseApplet):
 
         # Check if ATH data is loaded
         if not self.ath_data or self.ath_data.get("ath_usd") is None:
-            self.screen_manager.draw_centered_text("ATH Data N/A")
+            self.screen_manager.draw_centered_text("ATH Data N/A", y_offset=90)
             gc.collect()
             return
 
@@ -82,11 +82,20 @@ class ath_applet(BaseApplet):
         ath_date_str = self.ath_data.get("ath_date_usd", "Unknown date")
         ath_date_formatted = ath_date_str.split("T")[0] if isinstance(ath_date_str, str) else "Unknown date"
 
-        # Draw ATH Price and Date
-        self.screen_manager.draw_text("ATH Price:", 15, 50, scale=2)
-        self.screen_manager.draw_text(f"${int(ath_price):,}", 15, 75, scale=3)
-        self.screen_manager.draw_text(f"Date: {ath_date_formatted}", 15, 110, scale=2)
-
+        # Draw ATH Price and Date - centered on screen
+        # Looking at bitcoin_applet.py, we see they're using absolute positions
+        # and the draw_centered_text has a different parameter style
+        
+        # Title centered at the top portion
+        self.screen_manager.draw_centered_text("BTC ATH", scale=3, y_offset=-60)
+        
+        # ATH Price - large and prominent in the center, matching bitcoin_applet's size
+        # In the bitcoin example, they don't specify scale for the price, meaning it uses default (likely 4)
+        self.screen_manager.draw_centered_text(f"${int(ath_price):,}")
+        
+        # Date below the price - moved down more to avoid overlap
+        self.screen_manager.draw_centered_text(f"Date: {ath_date_formatted}", scale=2, y_offset=40)
+        
         # Check if current price data is available
         current_price = None
         if isinstance(self.current_price_data, dict):
@@ -100,24 +109,24 @@ class ath_applet(BaseApplet):
                         print(f"[ath_applet] Error converting current price: {price_str}")
 
         # Calculate and draw percentage difference if current price is available
+        # Position this at the bottom portion but above the footer - moved down more
         if current_price is not None:
             try:
                 percentage_diff = ((current_price - ath_price) / ath_price) * 100
                 diff_text = f"Current: {percentage_diff:.2f}% vs ATH"
-
-                # Determine color based on difference (will always be negative or zero)
                 text_color = self.screen_manager.theme['NEGATIVE_COLOR'] if percentage_diff < 0 else self.screen_manager.theme['MAIN_FONT_COLOR']
-
-                # Draw percentage difference
-                self.screen_manager.draw_text(diff_text, 15, 150, scale=2, color=text_color)
-
+                
+                # Drawing at y_offset=70 (70 pixels below center) - adjusted from 80 to avoid footer
+                self.screen_manager.draw_centered_text(diff_text, scale=2, y_offset=70, color=text_color)
             except ZeroDivisionError:
-                 self.screen_manager.draw_text("Cannot calc % diff (ATH=0?)", 15, 150, scale=2, color=self.screen_manager.theme['NEGATIVE_COLOR'])
+                self.screen_manager.draw_centered_text("Cannot calc % diff (ATH=0?)", scale=2, y_offset=70, 
+                                                      color=self.screen_manager.theme['NEGATIVE_COLOR'])
             except Exception as e:
-                 print(f"[ath_applet] Error calculating percentage diff: {e}")
-                 self.screen_manager.draw_text("% Diff Error", 15, 150, scale=2, color=self.screen_manager.theme['NEGATIVE_COLOR'])
+                print(f"[ath_applet] Error calculating percentage diff: {e}")
+                self.screen_manager.draw_centered_text("% Diff Error", scale=2, y_offset=70,
+                                                     color=self.screen_manager.theme['NEGATIVE_COLOR'])
         else:
             # Current price not available
-            self.screen_manager.draw_text("Current Price: Loading...", 15, 150, scale=2)
+            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=70)
 
         gc.collect()
