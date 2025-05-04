@@ -13,12 +13,13 @@ class bitcoin_applet(BaseApplet):
     def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
         super().__init__('bitcoin_applet', screen_manager)
         self.data_manager = data_manager
-        self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
-        self.current_data = None # Store data fetched in update()
-        self.ath_data = None # Store ATH data loaded in start()
-        self.register()
+       self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+       self.current_data = None # Store data fetched in update()
+       # self.ath_data removed
+       self.register()
 
-    def _load_ath_data(self):
+   # _load_ath_data method removed
+   # def _load_ath_data(self):
         """Load ATH data from the JSON file created by the initializer."""
         try:
             with open("bitcoin_ath.json", "r") as f:
@@ -29,21 +30,21 @@ class bitcoin_applet(BaseApplet):
                 print("[bitcoin_applet] bitcoin_ath.json not found.")
             else:
                 print(f"[bitcoin_applet] Error loading bitcoin_ath.json: {e}")
-            self.ath_data = None # Ensure it's None on error
+            # self.ath_data removed
         except ValueError:
             print("[bitcoin_applet] Error parsing bitcoin_ath.json.")
-            self.ath_data = None
+            # self.ath_data removed
         except Exception as e:
             print(f"[bitcoin_applet] Unexpected error loading ATH data: {e}")
-            self.ath_data = None
+            # self.ath_data removed
 
-    def start(self):
-        # Reset data when applet starts
-        self.current_data = None
-        self._load_ath_data() # Load ATH data when applet starts
-        super().start()
+   def start(self):
+       # Reset data when applet starts
+       self.current_data = None
+       # _load_ath_data call removed
+       super().start()
 
-    def stop(self):
+   def stop(self):
         # No need for drawn flag handling
         super().stop()
 
