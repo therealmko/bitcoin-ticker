@@ -66,11 +66,20 @@ class AppletManager:
         print(f"[AppletManager] Applets updated and reloaded.")
 
     def get_applets_list(self):
+        saved_data = [] # Initialize to empty list
         try:
             with open("applets.json", "r") as f:
                 saved_data = json.load(f)
-        except:
-            saved_data = []
+        except OSError as e:
+             if e.args[0] == uerrno.ENOENT:
+                 print("[AppletManager] applets.json not found in get_applets_list. Returning defaults.")
+                 # Initializer should have created it, but proceed with defaults if missing.
+             else:
+                 print(f"[AppletManager] OS Error reading applets.json in get_applets_list: {e}")
+             # saved_data remains []
+        except ValueError:
+             print("[AppletManager] Value Error parsing applets.json in get_applets_list.")
+             # saved_data remains []
 
         # Default all known applets to disabled
         default_data = [{"name": name, "enabled": False} for name in self.all_applets.keys()]
@@ -82,6 +91,8 @@ class AppletManager:
         for entry in default_data:
             name = entry["name"]
             entry["enabled"] = applet_map.get(name, False)
+
+        return default_data # Return the merged list
 
 
     def load_applets(self, filename="applets.json"):
