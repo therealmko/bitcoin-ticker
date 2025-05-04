@@ -13,30 +13,9 @@ class bitcoin_applet(BaseApplet):
     def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
         super().__init__('bitcoin_applet', screen_manager)
         self.data_manager = data_manager
-       self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
-       self.current_data = None # Store data fetched in update()
-       # self.ath_data removed
-       self.register()
-
-   # _load_ath_data method removed
-   # def _load_ath_data(self):
-        """Load ATH data from the JSON file created by the initializer."""
-        try:
-            with open("bitcoin_ath.json", "r") as f:
-                self.ath_data = json.load(f)
-                print(f"[bitcoin_applet] Loaded ATH data: {self.ath_data}")
-        except OSError as e:
-            if e.args[0] == uerrno.ENOENT:
-                print("[bitcoin_applet] bitcoin_ath.json not found.")
-            else:
-                print(f"[bitcoin_applet] Error loading bitcoin_ath.json: {e}")
-            # self.ath_data removed
-        except ValueError:
-            print("[bitcoin_applet] Error parsing bitcoin_ath.json.")
-            # self.ath_data removed
-        except Exception as e:
-            print(f"[bitcoin_applet] Unexpected error loading ATH data: {e}")
-            # self.ath_data removed
+        self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
+        self.current_data = None # Store data fetched in update()
+        self.register()
 
    def start(self):
        # Reset data when applet starts
@@ -121,8 +100,6 @@ class bitcoin_applet(BaseApplet):
 
                     # Draw the text (use default color)
                     self.screen_manager.draw_text(change_text, x, y, scale=2)
-
-                    # ATH info display removed from here, handled by ath_applet
 
                 except (ValueError, TypeError) as e:
                     print(f"[bitcoin_applet] Error converting values: {e}")
