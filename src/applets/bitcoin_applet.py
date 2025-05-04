@@ -20,7 +20,6 @@ class bitcoin_applet(BaseApplet):
    def start(self):
        # Reset data when applet starts
        self.current_data = None
-       # _load_ath_data call removed
        super().start()
 
    def stop(self):
@@ -34,9 +33,7 @@ class bitcoin_applet(BaseApplet):
     async def update(self):
         # Fetch data in update
         self.current_data = self.data_manager.get_cached_data(self.api_url)
-        # print(f"[bitcoin_applet] Updated data: {self.current_data}") # Optional debug
         gc.collect()
-        # No need to call super().update()
 
     async def draw(self):
         # Draw uses data fetched by update()
