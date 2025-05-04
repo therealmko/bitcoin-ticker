@@ -121,21 +121,7 @@ class bitcoin_applet(BaseApplet):
                     # Draw the text (use default color)
                     self.screen_manager.draw_text(change_text, x, y, scale=2)
 
-                    # Draw ATH info if available
-                    if self.ath_data and self.ath_data.get("ath_usd") is not None:
-                        ath_price = self.ath_data["ath_usd"]
-                        ath_date_str = self.ath_data.get("ath_date_usd", "Unknown date")
-                        # Basic date formatting (extract YYYY-MM-DD)
-                        ath_date_formatted = ath_date_str.split("T")[0] if isinstance(ath_date_str, str) else "Unknown date"
-
-                        ath_text = f"ATH: ${int(ath_price):,} ({ath_date_formatted})"
-                        ath_y = self.screen_manager.height - 50 # Position near bottom, above footer
-                        self.screen_manager.draw_horizontal_centered_text(ath_text, ath_y, scale=1, color=self.screen_manager.theme['FOOTER_COLOR'])
-                    else:
-                        # Optionally draw placeholder if ATH data is missing
-                        ath_text = "ATH: N/A"
-                        ath_y = self.screen_manager.height - 50
-                        self.screen_manager.draw_horizontal_centered_text(ath_text, ath_y, scale=1, color=self.screen_manager.theme['FOOTER_COLOR'])
+                    # ATH info display removed from here, handled by ath_applet
 
                 except (ValueError, TypeError) as e:
                     print(f"[bitcoin_applet] Error converting values: {e}")

@@ -17,7 +17,8 @@ from applets import (
     moscow_time_applet,
     halving_countdown_applet,
     mempool_status_applet,
-    difficulty_applet
+    difficulty_applet,
+    ath_applet # Import the new applet
 )
 from config import ConfigManager
 
@@ -52,6 +53,7 @@ class AppletManager:
             "halving_countdown_applet": halving_countdown_applet.halving_countdown_applet,
             "mempool_status_applet": mempool_status_applet.mempool_status_applet,
             "difficulty_applet": difficulty_applet.difficulty_applet,
+            "ath_applet": ath_applet.ath_applet, # Add the new applet here
         }
         self.applets = self.load_applets()
 
