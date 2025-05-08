@@ -101,7 +101,7 @@ class dominance_applet(BaseApplet):
             # Dominance text (scale 8) is y_offset=-10. Approx bottom: screen_height/2 - 10 + (8*8/2) = screen_height/2 + 22
             bar_top_abs_y = self.screen_manager.height // 2 + 35 
             
-            bar_outline_color_rgb = self.screen_manager.theme['HEADER_COLOR']
+            bar_outline_color_rgb = self.screen_manager.theme['ACCENT_COLOR'] # Use ACCENT_COLOR for header/orange
             bar_pen = self.screen_manager.get_pen(bar_outline_color_rgb)
             self.screen_manager.display.set_pen(bar_pen)
 
