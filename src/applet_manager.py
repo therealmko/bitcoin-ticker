@@ -64,7 +64,6 @@ class AppletManager:
             # The 'applets' parameter is expected to be a list of dicts:
             # [{"name": "applet_name", "enabled": True/False}, ...]
             # This list comes directly from the web_server's parsed JSON body.
-            print(f"[AppletManager] Attempting to write to {filename}: {applets}")
             json.dump(applets, f) # Directly dump the received list, assuming it's correctly formatted
         self.applets = self.load_applets(filename)
         self.current_index = 0
