@@ -144,7 +144,7 @@ class DataManager:
                 if response.status_code == 200:
                     data = response.json()
                     self._set_led("success")
-                    print(f"[DataManager] Successfully fetched: {data}")
+                    print(f"[DataManager] Successfully fetched data from: {url}") # Less verbose log
                     return data
                 else:
                     print(f"[DataManager] HTTP Error: {response.status_code}")
