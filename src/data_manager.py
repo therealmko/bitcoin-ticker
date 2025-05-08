@@ -176,6 +176,7 @@ class DataManager:
         Periodically update the cache for a specific endpoint.
         :param url: The endpoint URL to keep updated.
         """
+        print(f"[DataManager._update_cache] Task started for URL: {url}")
         while True:
             current_time = time.time()
             file_path = self._get_cache_file_path(url)
@@ -184,8 +185,10 @@ class DataManager:
 
             # Check if the TTL has expired OR if it's the very first run (last_update == 0)
             if last_update == 0 or (current_time - last_update > ttl):
+                print(f"[DataManager._update_cache] Condition met to fetch for URL: {url} (last_update={last_update}, ttl={ttl})")
                 data = await self._fetch_data(url)
                 if data is not None:
+                    print(f"[DataManager._update_cache] Data fetched successfully for URL: {url}. Writing to cache.")
                     # Update last_update only after a successful fetch and write
                     new_timestamp = time.time() # Use fresh timestamp for successful update
                     self.endpoint_registry[url]['last_update'] = new_timestamp
@@ -195,10 +198,19 @@ class DataManager:
                     }
                     with open(file_path, 'w') as f:
                         json.dump(metadata, f)
+                else:
+                    print(f"[DataManager._update_cache] Fetch returned None for URL: {url}. Cache not updated.")
 
             # Sleep for half the TTL to allow for more frequent checks
             # while still respecting the TTL for fresh data
-            await asyncio.sleep(ttl // 2)
+            # For initial fetch (last_update was 0), a shorter sleep might be better if fetch failed.
+            # However, _fetch_data has retries. If it returns None, it means all retries failed.
+            sleep_duration = ttl // 2
+            if last_update == 0 and data is None: # If initial fetch for this URL failed in this cycle
+                sleep_duration = min(60, ttl // 2 if ttl // 2 > 0 else 60) # Retry sooner, ensure positive sleep
+                print(f"[DataManager._update_cache] Initial fetch failed for {url}, sleeping for shorter duration: {sleep_duration}s")
+
+            await asyncio.sleep(sleep_duration)
 
     async def run(self) -> None:
         """
