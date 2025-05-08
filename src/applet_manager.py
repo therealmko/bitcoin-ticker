@@ -61,10 +61,11 @@ class AppletManager:
 
     def update_applets(self, applets, filename="applets.json"):
         with open(filename, "w") as f:
-            data = []
-            for applet in applets:
-                data.append({"name": applet["name"], "enabled": applet["enabled"]})
-            json.dump(data, f)
+            # The 'applets' parameter is expected to be a list of dicts:
+            # [{"name": "applet_name", "enabled": True/False}, ...]
+            # This list comes directly from the web_server's parsed JSON body.
+            print(f"[AppletManager] Attempting to write to {filename}: {applets}")
+            json.dump(applets, f) # Directly dump the received list, assuming it's correctly formatted
         self.applets = self.load_applets(filename)
         self.current_index = 0
         print(f"[AppletManager] Applets updated and reloaded.")
