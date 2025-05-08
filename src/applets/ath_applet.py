@@ -64,7 +64,7 @@ class ath_applet(BaseApplet):
 
     async def draw(self):
         self.screen_manager.clear()
-        self.screen_manager.draw_header("ATH")
+        self.screen_manager.draw_header("Bitcoin ATH")
 
         # Draw footer with timestamp from current price data cache
         timestamp = None
@@ -86,10 +86,10 @@ class ath_applet(BaseApplet):
         self.screen_manager.draw_centered_text("BTC ATH", scale=3, y_offset=-60)
         
         # ATH Price - large and prominent, similar to bitcoin_applet price display
-        self.screen_manager.draw_centered_text(f"${int(ath_price):,}") # Default scale, default y_offset=0
+        self.screen_manager.draw_centered_text(f"${int(ath_price):,}", y_offset=-10) # Default scale, moved up
         
         # ATH Date (scale 2, below ATH price)
-        self.screen_manager.draw_centered_text(f"Date: {ath_date_formatted}", scale=2, y_offset=35)
+        self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
         
         # Check if current price data is available
         current_price = None
@@ -106,24 +106,24 @@ class ath_applet(BaseApplet):
         # Display Current Price and Percentage Difference (scale 2)
         if current_price is not None:
             # Display Current Price (scale 2, below date)
-            self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,}", scale=2, y_offset=55)
+            self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,}", scale=2, y_offset=45)
 
             # Calculate and draw percentage difference (scale 2, below current price)
             try:
                 percentage_diff = ((current_price - ath_price) / ath_price) * 100
                 diff_text = f"{percentage_diff:+.2f}% vs ATH" # Added '+' for positive values
                 text_color = self.screen_manager.theme['NEGATIVE_COLOR'] if percentage_diff < 0 else self.screen_manager.theme['MAIN_FONT_COLOR']
-                self.screen_manager.draw_centered_text(diff_text, scale=2, y_offset=75, color=text_color)
+                self.screen_manager.draw_centered_text(diff_text, scale=2, y_offset=65, color=text_color)
             except ZeroDivisionError:
-                self.screen_manager.draw_centered_text("Cannot calc % diff", scale=2, y_offset=75,
+                self.screen_manager.draw_centered_text("Cannot calc % diff", scale=2, y_offset=65,
                                                       color=self.screen_manager.theme['NEGATIVE_COLOR'])
             except Exception as e:
                 print(f"[ath_applet] Error calculating percentage diff: {e}")
-                self.screen_manager.draw_centered_text("% Diff Error", scale=2, y_offset=75,
+                self.screen_manager.draw_centered_text("% Diff Error", scale=2, y_offset=65,
                                                      color=self.screen_manager.theme['NEGATIVE_COLOR'])
         else:
             # Current price not available (scale 2, below date)
-            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=55)
+            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=45)
             # If current price is loading, % diff line is omitted.
 
         gc.collect()
