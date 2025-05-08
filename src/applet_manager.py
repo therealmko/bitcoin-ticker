@@ -19,7 +19,8 @@ from applets import (
     mempool_status_applet,
     difficulty_applet,
     ath_applet, # Import the new applet
-    fear_and_greed_applet # Import the Fear and Greed applet
+    fear_and_greed_applet, # Import the Fear and Greed applet
+    dominance_applet # Import the Bitcoin Dominance applet
 )
 from config import ConfigManager
 
@@ -56,6 +57,7 @@ class AppletManager:
             "difficulty_applet": difficulty_applet.difficulty_applet,
             "ath_applet": ath_applet.ath_applet, # Add the new applet here
             "fear_and_greed_applet": fear_and_greed_applet.fear_and_greed_applet, # Add Fear and Greed applet
+            "dominance_applet": dominance_applet.dominance_applet, # Add Bitcoin Dominance applet
         }
         self.applets = self.load_applets()
 
