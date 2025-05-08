@@ -114,7 +114,7 @@ class fear_and_greed_applet(BaseApplet):
             # Calculate the index (0-100) corresponding to this segment of the bar
             segment_index = (i / bar_width) * 100
             r, g, b = self._calculate_color_for_index(segment_index)
-            pen = self.screen_manager.get_pen(r, g, b)
+            pen = self.screen_manager.get_pen((r, g, b)) # Pass RGB as a tuple
             self.screen_manager.display.set_pen(pen)
             self.screen_manager.display.rectangle(bar_margin_x + i, bar_y_start, 1, bar_height)
 

@@ -104,18 +104,15 @@ class DataManager:
         if ttl is None:
             ttl = self.ttl_default
 
-        print(f"[DataManager] Registering endpoint: {url} with TTL: {ttl}") # DEBUG LOG
         if url not in self.endpoint_registry:
             self.endpoint_registry[url] = {
                 'ttl': ttl,
                 'last_update': 0  # Initialize last_update to 0 to force initial fetch
             }
-            print(f"[DataManager] Endpoint {url} newly registered.") # DEBUG LOG
         else:
             # Use the minimum TTL if multiple registrations occur
             if ttl < self.endpoint_registry[url]['ttl']:
                 self.endpoint_registry[url]['ttl'] = ttl
-                print(f"[DataManager] Endpoint {url} TTL updated to {ttl}.") # DEBUG LOG
             # Do not reset last_update if already registered, to respect existing cache state
             # unless we specifically want to force re-fetch on re-registration logic.
             # For now, assume existing last_update is fine.
@@ -179,20 +176,14 @@ class DataManager:
         Periodically update the cache for a specific endpoint.
         :param url: The endpoint URL to keep updated.
         """
-        print(f"[DataManager] _update_cache started for URL: {url}") # DEBUG LOG
         while True:
             current_time = time.time()
             file_path = self._get_cache_file_path(url)
             ttl = self.endpoint_registry[url]['ttl']
             last_update = self.endpoint_registry[url]['last_update']
 
-            print(f"[DataManager] Checking cache for {url}: current_time={current_time}, last_update={last_update}, ttl={ttl}, diff={current_time - last_update}") # DEBUG LOG
             # Check if the TTL has expired OR if it's the very first run (last_update == 0)
             if last_update == 0 or (current_time - last_update > ttl):
-                if last_update == 0:
-                    print(f"[DataManager] Initial fetch for {url} (last_update is 0).") # DEBUG LOG
-                else:
-                    print(f"[DataManager] TTL expired for {url}. Fetching new data.") # DEBUG LOG
                 data = await self._fetch_data(url)
                 if data is not None:
                     # Update last_update only after a successful fetch and write
@@ -221,7 +212,7 @@ class DataManager:
             for url in self.endpoint_registry
         ]
         if not tasks:
-            print("[DataManager] No endpoints registered. DataManager run loop will be idle.") # DEBUG LOG
+            print("[DataManager] No endpoints registered. DataManager run loop will be idle.")
         else:
-            print(f"[DataManager] Starting _update_cache tasks for URLs: {list(self.endpoint_registry.keys())}") # DEBUG LOG
+            print(f"[DataManager] Starting _update_cache tasks for URLs: {list(self.endpoint_registry.keys())}")
         await asyncio.gather(*tasks)
