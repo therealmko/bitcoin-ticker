@@ -110,17 +110,17 @@ class ath_applet(BaseApplet):
                 # Combined text for current price and percentage difference
                 combined_text = f"Now: ${int(current_price):,} ({percentage_diff:+.2f}% vs ATH)"
                 text_color = self.screen_manager.theme['NEGATIVE_COLOR'] if percentage_diff < 0 else self.screen_manager.theme['MAIN_FONT_COLOR']
-                self.screen_manager.draw_centered_text(combined_text, scale=2, y_offset=45, color=text_color)
+                self.screen_manager.draw_centered_text(combined_text, scale=2, y_offset=60, color=text_color)
             except ZeroDivisionError:
-                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (ATH Zero)", scale=2, y_offset=45,
+                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (ATH Zero)", scale=2, y_offset=60,
                                                       color=self.screen_manager.theme['NEGATIVE_COLOR'])
             except Exception as e:
                 print(f"[ath_applet] Error calculating/displaying combined price/percentage: {e}")
-                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (Error %)", scale=2, y_offset=45,
+                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (Error %)", scale=2, y_offset=60,
                                                      color=self.screen_manager.theme['NEGATIVE_COLOR'])
         else:
             # Current price not available (scale 2, at the combined line's y_offset)
-            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=45)
+            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=60)
             # If current price is loading, combined info line shows loading.
 
         gc.collect()
