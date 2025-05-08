@@ -103,27 +103,24 @@ class ath_applet(BaseApplet):
                     except (ValueError, TypeError):
                         print(f"[ath_applet] Error converting current price: {price_str}")
 
-        # Display Current Price and Percentage Difference (scale 2)
+        # Display Combined Current Price and Percentage Difference (scale 2)
         if current_price is not None:
-            # Display Current Price (scale 2, below date)
-            self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,}", scale=2, y_offset=45)
-
-            # Calculate and draw percentage difference (scale 2, below current price)
             try:
                 percentage_diff = ((current_price - ath_price) / ath_price) * 100
-                diff_text = f"{percentage_diff:+.2f}% vs ATH" # Added '+' for positive values
+                # Combined text for current price and percentage difference
+                combined_text = f"Now: ${int(current_price):,} ({percentage_diff:+.2f}% vs ATH)"
                 text_color = self.screen_manager.theme['NEGATIVE_COLOR'] if percentage_diff < 0 else self.screen_manager.theme['MAIN_FONT_COLOR']
-                self.screen_manager.draw_centered_text(diff_text, scale=2, y_offset=65, color=text_color)
+                self.screen_manager.draw_centered_text(combined_text, scale=2, y_offset=45, color=text_color)
             except ZeroDivisionError:
-                self.screen_manager.draw_centered_text("Cannot calc % diff", scale=2, y_offset=65,
+                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (ATH Zero)", scale=2, y_offset=45,
                                                       color=self.screen_manager.theme['NEGATIVE_COLOR'])
             except Exception as e:
-                print(f"[ath_applet] Error calculating percentage diff: {e}")
-                self.screen_manager.draw_centered_text("% Diff Error", scale=2, y_offset=65,
+                print(f"[ath_applet] Error calculating/displaying combined price/percentage: {e}")
+                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (Error %)", scale=2, y_offset=45,
                                                      color=self.screen_manager.theme['NEGATIVE_COLOR'])
         else:
-            # Current price not available (scale 2, below date)
+            # Current price not available (scale 2, at the combined line's y_offset)
             self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=45)
-            # If current price is loading, % diff line is omitted.
+            # If current price is loading, combined info line shows loading.
 
         gc.collect()
