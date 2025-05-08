@@ -94,8 +94,45 @@ class dominance_applet(BaseApplet):
             # Using y_offset=-10 to match ATH applet's main value position
             self.screen_manager.draw_centered_text(f"{dominance_value:.2f}%", y_offset=-10)
 
+            # --- Draw Dominance Bar ---
+            bar_margin_x = 30
+            bar_height = 20
+            # Position bar below the dominance percentage text
+            # Dominance text (scale 8) is y_offset=-10. Approx bottom: screen_height/2 - 10 + (8*8/2) = screen_height/2 + 22
+            bar_top_abs_y = self.screen_manager.height // 2 + 35 
+            
+            bar_outline_color_rgb = self.screen_manager.theme['HEADER_COLOR']
+            bar_pen = self.screen_manager.get_pen(bar_outline_color_rgb)
+            self.screen_manager.display.set_pen(bar_pen)
+
+            bar_x = bar_margin_x
+            bar_width = self.screen_manager.width - 2 * bar_margin_x
+
+            # Draw outline (4 lines)
+            # Top line
+            self.screen_manager.display.line(bar_x, bar_top_abs_y, bar_x + bar_width - 1, bar_top_abs_y)
+            # Bottom line
+            self.screen_manager.display.line(bar_x, bar_top_abs_y + bar_height - 1, bar_x + bar_width - 1, bar_top_abs_y + bar_height - 1)
+            # Left line
+            self.screen_manager.display.line(bar_x, bar_top_abs_y, bar_x, bar_top_abs_y + bar_height - 1)
+            # Right line
+            self.screen_manager.display.line(bar_x + bar_width - 1, bar_top_abs_y, bar_x + bar_width - 1, bar_top_abs_y + bar_height - 1)
+
+            # Draw fill (inside the outline)
+            fill_x = bar_x + 1
+            fill_y = bar_top_abs_y + 1
+            fill_max_width = bar_width - 2
+            fill_height = bar_height - 2
+
+            # Clamp dominance_value between 0 and 100 for fill calculation
+            clamped_dominance = max(0.0, min(100.0, dominance_value))
+            actual_fill_width = int((clamped_dominance / 100.0) * fill_max_width)
+
+            if actual_fill_width > 0: # Only draw fill if it has width
+                self.screen_manager.display.rectangle(fill_x, fill_y, actual_fill_width, fill_height)
+
         except (ValueError, TypeError) as e:
-            print(f"[dominance_applet] Error converting dominance value: {e}")
+            print(f"[dominance_applet] Error converting dominance value or drawing bar: {e}")
             self.screen_manager.draw_centered_text("Data Error")
 
         gc.collect()
