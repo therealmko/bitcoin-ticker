@@ -75,6 +75,8 @@ class dominance_applet(BaseApplet):
             print(f"[dominance_applet] market_cap_percentage not found or not a dict in CoinGecko data.")
             gc.collect()
             return
+        
+        print(f"[dominance_applet] Inspected market_cap_percentage_data: {market_cap_percentage_data}") # DEBUG LOG
             
         btc_dominance = market_cap_percentage_data.get('btc')
 
