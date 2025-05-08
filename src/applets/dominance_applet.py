@@ -38,10 +38,13 @@ class dominance_applet(BaseApplet):
 
         timestamp = None
         if isinstance(self.current_data, dict):
-            # CoinGecko's global data has 'updated_at' at the top level of the 'data' object
-            api_response_data = self.current_data.get('data', {})
+            # api_response_data is the actual content from CoinGecko
+            api_response_data = self.current_data.get('data', {}) 
             if isinstance(api_response_data, dict):
-                timestamp = api_response_data.get("updated_at")
+                # The actual data from CoinGecko is nested under another 'data' key
+                coingecko_internal_data = api_response_data.get('data', {})
+                if isinstance(coingecko_internal_data, dict):
+                    timestamp = coingecko_internal_data.get("updated_at")
         self.screen_manager.draw_footer(timestamp)
 
         if self.current_data is None:
@@ -57,11 +60,19 @@ class dominance_applet(BaseApplet):
             return
 
         # Extract dominance data
-        # Path: data -> market_cap_percentage -> btc
-        market_cap_percentage_data = api_response_data.get('market_cap_percentage', {})
+        # api_response_data is the direct JSON response from CoinGecko.
+        # The actual values are nested under a 'data' key within this response.
+        coingecko_internal_data = api_response_data.get('data', {})
+        if not isinstance(coingecko_internal_data, dict):
+            self.screen_manager.draw_centered_text("Data Error")
+            print(f"[dominance_applet] CoinGecko internal 'data' object not found or not a dict.")
+            gc.collect()
+            return
+
+        market_cap_percentage_data = coingecko_internal_data.get('market_cap_percentage', {})
         if not isinstance(market_cap_percentage_data, dict):
             self.screen_manager.draw_centered_text("Data Error")
-            print(f"[dominance_applet] market_cap_percentage not found or not a dict.")
+            print(f"[dominance_applet] market_cap_percentage not found or not a dict in CoinGecko data.")
             gc.collect()
             return
             
