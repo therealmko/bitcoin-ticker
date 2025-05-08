@@ -18,7 +18,8 @@ from applets import (
     halving_countdown_applet,
     mempool_status_applet,
     difficulty_applet,
-    ath_applet # Import the new applet
+    ath_applet, # Import the new applet
+    fear_and_greed_applet # Import the Fear and Greed applet
 )
 from config import ConfigManager
 
@@ -54,6 +55,7 @@ class AppletManager:
             "mempool_status_applet": mempool_status_applet.mempool_status_applet,
             "difficulty_applet": difficulty_applet.difficulty_applet,
             "ath_applet": ath_applet.ath_applet, # Add the new applet here
+            "fear_and_greed_applet": fear_and_greed_applet.fear_and_greed_applet, # Add Fear and Greed applet
         }
         self.applets = self.load_applets()
 
