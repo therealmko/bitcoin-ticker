@@ -173,7 +173,6 @@ class DataManager:
 
     async def _update_cache(self, url: str) -> None:
         """
-        """
         Periodically update the cache for a specific endpoint.
         :param url: The endpoint URL to keep updated.
         """
