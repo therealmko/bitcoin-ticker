@@ -23,9 +23,10 @@ class Initializer:
     ATH_DATA_FILE = "ath.json" # Changed filename
     ATH_DUMP_FILE = "ath_dump.tmp" # Temporary file for raw API data
 
-    def __init__(self, screen_manager: ScreenManager, config_manager: ConfigManager):
+    def __init__(self, screen_manager: ScreenManager, config_manager: ConfigManager, applet_manager): # Added applet_manager
         self.screen_manager = screen_manager
-        self.config_manager = config_manager # Keep for potential future use
+        self.config_manager = config_manager
+        self.applet_manager = applet_manager # Store applet_manager instance
 
     async def _show_initializing_screen(self, message="Initializing"):
         """Displays an initializing message on the screen."""
@@ -66,6 +67,8 @@ class Initializer:
                 with open(self.APPLET_CONFIG_FILE, "w") as f:
                     json.dump(default_data, f)
                 print(f"[Initializer] Default {self.APPLET_CONFIG_FILE} created.")
+                if self.applet_manager:
+                    self.applet_manager.refresh_applet_list() # Notify AppletManager to reload
             except Exception as e:
                 print(f"[Initializer] ERROR: Failed to create default {self.APPLET_CONFIG_FILE}: {e}")
         else:

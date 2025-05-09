@@ -27,8 +27,8 @@ async def main() -> None:
 
     # Pass the single config_manager instance
     applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager, config_manager)
-    # Create Initializer instance
-    initializer = Initializer(screen_manager, config_manager)
+    # Create Initializer instance and pass applet_manager_instance to it
+    initializer = Initializer(screen_manager, config_manager, applet_manager_instance)
 
     splash_applet = applet_manager.SplashApplet(screen_manager)
     print("[Main] Starting splash applet.")
