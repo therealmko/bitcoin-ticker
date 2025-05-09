@@ -59,18 +59,9 @@ class fear_and_greed_applet(BaseApplet):
 
         timestamp = None
         if isinstance(self.current_data, dict):
-            api_response_data = self.current_data.get('data', {}) # This is the actual API JSON
-            if isinstance(api_response_data, dict) and api_response_data.get('data'):
-                 # The API nests the list under a "data" key
-                fng_list = api_response_data.get('data', [])
-                if fng_list and isinstance(fng_list, list):
-                    # API timestamp is string, convert to int for footer
-                    try:
-                        timestamp_str = fng_list[0].get("timestamp")
-                        if timestamp_str:
-                            timestamp = int(timestamp_str)
-                    except (ValueError, TypeError, IndexError):
-                        pass # Keep timestamp as None
+            # Use the timestamp from the DataManager's cache entry,
+            # which reflects when our system last fetched the data.
+            timestamp = self.current_data.get('timestamp', None)
         self.screen_manager.draw_footer(timestamp)
 
         if self.current_data is None:
