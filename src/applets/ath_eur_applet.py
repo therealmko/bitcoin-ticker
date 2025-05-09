@@ -6,6 +6,7 @@ from data_manager import DataManager
 from micropython import const
 import gc
 import uerrno
+import time
 
 class ath_eur_applet(BaseApplet):
     """
