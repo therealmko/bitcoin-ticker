@@ -28,17 +28,17 @@ class ath_applet(BaseApplet):
     def _load_ath_data(self):
         """Load ATH data from the JSON file created by the initializer."""
         try:
-            with open("bitcoin_ath.json", "r") as f:
+            with open("ath.json", "r") as f: # Changed filename
                 self.ath_data = json.load(f)
                 print(f"[ath_applet] Loaded ATH data: {self.ath_data}")
         except OSError as e:
             if e.args[0] == uerrno.ENOENT:
-                print("[ath_applet] bitcoin_ath.json not found.")
+                print("[ath_applet] ath.json not found.")
             else:
-                print(f"[ath_applet] Error loading bitcoin_ath.json: {e}")
+                print(f"[ath_applet] Error loading ath.json: {e}")
             self.ath_data = None # Ensure it's None on error
         except ValueError:
-            print("[ath_applet] Error parsing bitcoin_ath.json.")
+            print("[ath_applet] Error parsing ath.json.")
             self.ath_data = None
         except Exception as e:
             print(f"[ath_applet] Unexpected error loading ATH data: {e}")
