@@ -85,7 +85,7 @@ class ath_eur_applet(BaseApplet):
         self.screen_manager.draw_centered_text("BTC EUR ATH", scale=3, y_offset=-60)
         
         # ATH Price - large and prominent
-        self.screen_manager.draw_centered_text(f"E {int(ath_price_eur):,}", y_offset=-10) # Euro symbol replaced with E
+        self.screen_manager.draw_centered_text(f"E{int(ath_price_eur):,}", y_offset=-10) # Euro symbol replaced with E, space removed
         
         # ATH Date (scale 2, below ATH price)
         self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
@@ -131,15 +131,15 @@ class ath_eur_applet(BaseApplet):
 
             try:
                 percentage_diff = ((current_price_eur - ath_price_eur) / ath_price_eur) * 100
-                combined_text = f"Now: E {int(current_price_eur):,} ({percentage_diff:+.2f}% vs ATH)" # Euro symbol replaced with E
+                combined_text = f"Now: E{int(current_price_eur):,} ({percentage_diff:+.2f}% vs ATH)" # Euro symbol replaced with E, space removed
                 text_color = self.screen_manager.theme['NEGATIVE_COLOR'] if percentage_diff < 0 else self.screen_manager.theme['MAIN_FONT_COLOR']
                 self.screen_manager.draw_centered_text(combined_text, scale=2, y_offset=60, color=text_color)
             except ZeroDivisionError:
-                self.screen_manager.draw_centered_text(f"Now: E {int(current_price_eur):,} (ATH Zero)", scale=2, y_offset=60, # Euro symbol replaced with E
+                self.screen_manager.draw_centered_text(f"Now: E{int(current_price_eur):,} (ATH Zero)", scale=2, y_offset=60, # Euro symbol replaced with E, space removed
                                                       color=self.screen_manager.theme['NEGATIVE_COLOR'])
             except Exception as e:
                 print(f"[ath_eur_applet] Error calculating/displaying combined price/percentage: {e}")
-                self.screen_manager.draw_centered_text(f"Now: E {int(current_price_eur):,} (Error %)", scale=2, y_offset=60, # Euro symbol replaced with E
+                self.screen_manager.draw_centered_text(f"Now: E{int(current_price_eur):,} (Error %)", scale=2, y_offset=60, # Euro symbol replaced with E, space removed
                                                      color=self.screen_manager.theme['NEGATIVE_COLOR'])
         else:
             self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=60)
