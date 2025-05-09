@@ -73,6 +73,16 @@ class AppletManager:
         self.current_index = 0
         print(f"[AppletManager] Applets updated and reloaded.")
 
+    def refresh_applet_list(self):
+        """Reloads the applet list from applets.json. Called after potential initialization."""
+        print("[AppletManager] Refreshing applet list after potential initialization.")
+        self.applets = self.load_applets()
+        self.current_index = 0 # Reset index as the list might have changed
+        if self.applets:
+            print(f"[AppletManager] Applet list refreshed. {len(self.applets)} applets loaded.")
+        else:
+            print("[AppletManager] Applet list refreshed, but no applets were loaded (file might be empty or all disabled).")
+
     def get_applets_list(self):
         saved_data = [] # Initialize to empty list
         try:
