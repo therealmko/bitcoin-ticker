@@ -20,7 +20,8 @@ from applets import (
     difficulty_applet,
     ath_applet, # Import the new applet
     fear_and_greed_applet, # Import the Fear and Greed applet
-    dominance_applet # Import the Bitcoin Dominance applet
+    dominance_applet, # Import the Bitcoin Dominance applet
+    ath_eur_applet # Import the Bitcoin EUR ATH applet
 )
 from config import ConfigManager
 
@@ -58,6 +59,7 @@ class AppletManager:
             "ath_applet": ath_applet.ath_applet, # Add the new applet here
             "fear_and_greed_applet": fear_and_greed_applet.fear_and_greed_applet, # Add Fear and Greed applet
             "dominance_applet": dominance_applet.dominance_applet, # Add Bitcoin Dominance applet
+            "ath_eur_applet": ath_eur_applet.ath_eur_applet, # Add Bitcoin EUR ATH applet
         }
         self.applets = self.load_applets()
 
@@ -70,6 +72,16 @@ class AppletManager:
         self.applets = self.load_applets(filename)
         self.current_index = 0
         print(f"[AppletManager] Applets updated and reloaded.")
+
+    def refresh_applet_list(self):
+        """Reloads the applet list from applets.json. Called after potential initialization."""
+        print("[AppletManager] Refreshing applet list after potential initialization.")
+        self.applets = self.load_applets()
+        self.current_index = 0 # Reset index as the list might have changed
+        if self.applets:
+            print(f"[AppletManager] Applet list refreshed. {len(self.applets)} applets loaded.")
+        else:
+            print("[AppletManager] Applet list refreshed, but no applets were loaded (file might be empty or all disabled).")
 
     def get_applets_list(self):
         saved_data = [] # Initialize to empty list

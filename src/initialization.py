@@ -20,12 +20,13 @@ class Initializer:
     """
     ATH_API_URL = "https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
     APPLET_CONFIG_FILE = "applets.json"
-    ATH_DATA_FILE = "bitcoin_ath.json"
+    ATH_DATA_FILE = "ath.json" # Changed filename
     ATH_DUMP_FILE = "ath_dump.tmp" # Temporary file for raw API data
 
-    def __init__(self, screen_manager: ScreenManager, config_manager: ConfigManager):
+    def __init__(self, screen_manager: ScreenManager, config_manager: ConfigManager, applet_manager): # Added applet_manager
         self.screen_manager = screen_manager
-        self.config_manager = config_manager # Keep for potential future use
+        self.config_manager = config_manager
+        self.applet_manager = applet_manager # Store applet_manager instance
 
     async def _show_initializing_screen(self, message="Initializing"):
         """Displays an initializing message on the screen."""
@@ -66,6 +67,8 @@ class Initializer:
                 with open(self.APPLET_CONFIG_FILE, "w") as f:
                     json.dump(default_data, f)
                 print(f"[Initializer] Default {self.APPLET_CONFIG_FILE} created.")
+                if self.applet_manager:
+                    self.applet_manager.refresh_applet_list() # Notify AppletManager to reload
             except Exception as e:
                 print(f"[Initializer] ERROR: Failed to create default {self.APPLET_CONFIG_FILE}: {e}")
         else:
@@ -122,9 +125,13 @@ class Initializer:
             await self._show_initializing_screen("Processing ATH")
             ath_usd = None
             ath_date_usd = None
+            ath_eur = None # Added for EUR
+            ath_date_eur = None # Added for EUR
             buffer = ""
-            found_ath = False
-            found_ath_date = False
+            found_ath_usd = False # Renamed for clarity
+            found_ath_date_usd = False # Renamed for clarity
+            found_ath_eur = False # Added for EUR
+            found_ath_date_eur = False # Added for EUR
             chunk_size = 256 # Keep chunk size relatively small
             overlap_size = 50 # How much of the previous buffer to keep for searching across chunks
 
@@ -171,9 +178,16 @@ class Initializer:
                             ath_usd = ath_data.get("usd")
                             if ath_usd is not None:
                                 print(f"[Initializer] Parsed ATH USD: {ath_usd}")
-                                found_ath = True
+                                found_ath_usd = True
                             else:
                                 print("[Initializer] 'usd' key not found in ATH object.")
+                            
+                            ath_eur = ath_data.get("eur") # Get EUR ATH price
+                            if ath_eur is not None:
+                                print(f"[Initializer] Parsed ATH EUR: {ath_eur}")
+                                found_ath_eur = True
+                            else:
+                                print("[Initializer] 'eur' key not found in ATH object.")
                         except ValueError as e:
                             print(f"[Initializer] JSON parsing error for ATH object: {e}")
                         except Exception as e:
@@ -210,9 +224,16 @@ class Initializer:
                             ath_date_usd = ath_date_data.get("usd")
                             if ath_date_usd is not None:
                                 print(f"[Initializer] Parsed ATH Date USD: {ath_date_usd}")
-                                found_ath_date = True
+                                found_ath_date_usd = True
                             else:
                                 print("[Initializer] 'usd' key not found in ATH Date object.")
+
+                            ath_date_eur = ath_date_data.get("eur") # Get EUR ATH date
+                            if ath_date_eur is not None:
+                                print(f"[Initializer] Parsed ATH Date EUR: {ath_date_eur}")
+                                found_ath_date_eur = True
+                            else:
+                                print("[Initializer] 'eur' key not found in ATH Date object.")
                         except ValueError as e:
                             print(f"[Initializer] JSON parsing error for ATH Date object: {e}")
                         except Exception as e:
@@ -227,10 +248,12 @@ class Initializer:
             gc.collect()
 
             # --- Save extracted data ---
-            if ath_usd is not None and ath_date_usd is not None:
+            if found_ath_usd and found_ath_date_usd and found_ath_eur and found_ath_date_eur:
                 ath_output = {
                     "ath_usd": ath_usd,
-                    "ath_date_usd": ath_date_usd
+                    "ath_date_usd": ath_date_usd,
+                    "ath_eur": ath_eur,
+                    "ath_date_eur": ath_date_eur
                 }
                 try:
                     with open(self.ATH_DATA_FILE, "w") as f:
