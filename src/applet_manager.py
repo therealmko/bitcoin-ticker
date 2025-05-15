@@ -18,7 +18,9 @@ from applets import (
     halving_countdown_applet,
     mempool_status_applet,
     difficulty_applet,
-    ath_applet # Import the new applet
+    ath_applet, # Import the new applet
+    fear_and_greed_applet, # Import the Fear and Greed applet
+    dominance_applet # Import the Bitcoin Dominance applet
 )
 from config import ConfigManager
 
@@ -54,15 +56,17 @@ class AppletManager:
             "mempool_status_applet": mempool_status_applet.mempool_status_applet,
             "difficulty_applet": difficulty_applet.difficulty_applet,
             "ath_applet": ath_applet.ath_applet, # Add the new applet here
+            "fear_and_greed_applet": fear_and_greed_applet.fear_and_greed_applet, # Add Fear and Greed applet
+            "dominance_applet": dominance_applet.dominance_applet, # Add Bitcoin Dominance applet
         }
         self.applets = self.load_applets()
 
     def update_applets(self, applets, filename="applets.json"):
         with open(filename, "w") as f:
-            data = []
-            for applet in applets:
-                data.append({"name": applet["name"], "enabled": applet["enabled"]})
-            json.dump(data, f)
+            # The 'applets' parameter is expected to be a list of dicts:
+            # [{"name": "applet_name", "enabled": True/False}, ...]
+            # This list comes directly from the web_server's parsed JSON body.
+            json.dump(applets, f) # Directly dump the received list, assuming it's correctly formatted
         self.applets = self.load_applets(filename)
         self.current_index = 0
         print(f"[AppletManager] Applets updated and reloaded.")
