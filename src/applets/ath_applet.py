@@ -64,7 +64,7 @@ class ath_applet(BaseApplet):
 
     async def draw(self):
         self.screen_manager.clear()
-        self.screen_manager.draw_header("Bitcoin ATH Info")
+        self.screen_manager.draw_header("Bitcoin ATH")
 
         # Draw footer with timestamp from current price data cache
         timestamp = None
@@ -74,7 +74,7 @@ class ath_applet(BaseApplet):
 
         # Check if ATH data is loaded
         if not self.ath_data or self.ath_data.get("ath_usd") is None:
-            self.screen_manager.draw_centered_text("ATH Data N/A", y_offset=90)
+            self.screen_manager.draw_centered_text("ATH Data N/A", scale=3, y_offset=0) # Centered, larger text
             gc.collect()
             return
 
@@ -82,19 +82,14 @@ class ath_applet(BaseApplet):
         ath_date_str = self.ath_data.get("ath_date_usd", "Unknown date")
         ath_date_formatted = ath_date_str.split("T")[0] if isinstance(ath_date_str, str) else "Unknown date"
 
-        # Draw ATH Price and Date - centered on screen
-        # Looking at bitcoin_applet.py, we see they're using absolute positions
-        # and the draw_centered_text has a different parameter style
-        
-        # Title centered at the top portion
+        # Title "BTC ATH"
         self.screen_manager.draw_centered_text("BTC ATH", scale=3, y_offset=-60)
         
-        # ATH Price - large and prominent in the center, matching bitcoin_applet's size
-        # In the bitcoin example, they don't specify scale for the price, meaning it uses default (likely 4)
-        self.screen_manager.draw_centered_text(f"${int(ath_price):,}")
+        # ATH Price - large and prominent, similar to bitcoin_applet price display
+        self.screen_manager.draw_centered_text(f"${int(ath_price):,}", y_offset=-10) # Default scale, moved up
         
-        # Date below the price - moved down more to avoid overlap
-        self.screen_manager.draw_centered_text(f"Date: {ath_date_formatted}", scale=2, y_offset=40)
+        # ATH Date (scale 2, below ATH price)
+        self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
         
         # Check if current price data is available
         current_price = None
@@ -108,25 +103,24 @@ class ath_applet(BaseApplet):
                     except (ValueError, TypeError):
                         print(f"[ath_applet] Error converting current price: {price_str}")
 
-        # Calculate and draw percentage difference if current price is available
-        # Position this at the bottom portion but above the footer - moved down more
+        # Display Combined Current Price and Percentage Difference (scale 2)
         if current_price is not None:
             try:
                 percentage_diff = ((current_price - ath_price) / ath_price) * 100
-                diff_text = f"Current: {percentage_diff:.2f}% vs ATH"
+                # Combined text for current price and percentage difference
+                combined_text = f"Now: ${int(current_price):,} ({percentage_diff:+.2f}% vs ATH)"
                 text_color = self.screen_manager.theme['NEGATIVE_COLOR'] if percentage_diff < 0 else self.screen_manager.theme['MAIN_FONT_COLOR']
-                
-                # Drawing at y_offset=70 (70 pixels below center) - adjusted from 80 to avoid footer
-                self.screen_manager.draw_centered_text(diff_text, scale=2, y_offset=70, color=text_color)
+                self.screen_manager.draw_centered_text(combined_text, scale=2, y_offset=60, color=text_color)
             except ZeroDivisionError:
-                self.screen_manager.draw_centered_text("Cannot calc % diff (ATH=0?)", scale=2, y_offset=70, 
+                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (ATH Zero)", scale=2, y_offset=60,
                                                       color=self.screen_manager.theme['NEGATIVE_COLOR'])
             except Exception as e:
-                print(f"[ath_applet] Error calculating percentage diff: {e}")
-                self.screen_manager.draw_centered_text("% Diff Error", scale=2, y_offset=70,
+                print(f"[ath_applet] Error calculating/displaying combined price/percentage: {e}")
+                self.screen_manager.draw_centered_text(f"Now: ${int(current_price):,} (Error %)", scale=2, y_offset=60,
                                                      color=self.screen_manager.theme['NEGATIVE_COLOR'])
         else:
-            # Current price not available
-            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=70)
+            # Current price not available (scale 2, at the combined line's y_offset)
+            self.screen_manager.draw_centered_text("Current Price: Loading...", scale=2, y_offset=60)
+            # If current price is loading, combined info line shows loading.
 
         gc.collect()
