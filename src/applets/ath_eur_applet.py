@@ -63,10 +63,10 @@ class ath_eur_applet(BaseApplet):
         gc.collect()
 
     async def draw(self):
-        self.screen_manager.clear()
-        self.screen_manager.draw_header("Bitcoin EUR ATH")
+    self.screen_manager.clear()
+    self.screen_manager.draw_header("Bitcoin EUR ATH")
 
-        timestamp = None
+    timestamp = None
         if isinstance(self.current_price_data, dict): # Timestamp from current price fetch
             timestamp = self.current_price_data.get('timestamp', None)
         self.screen_manager.draw_footer(timestamp)
