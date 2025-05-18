@@ -10,6 +10,8 @@ class BaseApplet:
         self.data = None
         self.should_advance = False
         self.applet_name = applet_name
+        self.needs_redraw = True # Add needs_redraw flag
+
     def getName(self)->str:
         return self.applet_name
 
