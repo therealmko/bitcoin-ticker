@@ -23,9 +23,8 @@ class ath_applet(BaseApplet):
         # Need current price data, use the same endpoint as bitcoin_applet
         self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
         self.current_price_data = None # Store current price data fetched in update()
-        self.ath_data = None # Store ATH data loaded in __init__
+        self.ath_data = None # Store ATH data loaded in start()
         self.register()
-        self._load_ath_data() # Load ATH data here
 
     def _load_ath_data(self):
         """Load ATH data from the JSON file created by the initializer."""
@@ -49,6 +48,7 @@ class ath_applet(BaseApplet):
     def start(self):
         # Reset data when applet starts
         self.current_price_data = None
+        self._load_ath_data() # Load ATH data when applet starts
         super().start()
 
     def stop(self):
@@ -60,64 +60,40 @@ class ath_applet(BaseApplet):
 
     async def update(self):
         # Fetch current price data
-        if self.current_price_data and self.ath_data:
-            current_price = float(self.current_price_data['data']['lastPrice'])
-            if current_price > self.ath_data['ath_usd']:
-                fetch_timestamp = self.current_price_data.get('timestamp')
-                if fetch_timestamp:
-                    t = time.gmtime(fetch_timestamp)
-                    new_ath_date_str = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(t[0], t[1], t[2], t[3], t[4], t[5])
-                else:
-                    t = time.gmtime(time.time())
-                    new_ath_date_str = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(t[0], t[1], t[2], t[3], t[4], t[5])
-
-                print(f"[ath_applet] New ATH USD detected: {current_price} (was {self.ath_data.get('ath_usd')}) on {new_ath_date_str}")
-                self.ath_data["ath_usd"] = current_price
-                self.ath_data["ath_date_usd"] = new_ath_date_str
-                try:
-                    with open("ath.json", "w") as f:
-                        json.dump(self.ath_data, f)
-                    print("[ath_applet] Updated ath.json with new USD ATH.")
-                except Exception as e:
-                    print(f"[ath_applet] Error writing updated ath.json: {e}")
-                self.needs_redraw = True
-
+        self.current_price_data = self.data_manager.get_cached_data(self.api_url)
         gc.collect()
 
     async def draw(self):
-        if self.needs_redraw:
-            self.screen_manager.clear()
-            self.screen_manager.draw_header("BITCOIN DOLLAR ATH")
+        self.screen_manager.clear()
+        self.screen_manager.draw_header("BITCOIN DOLLAR ATH")
 
-            # Draw footer with timestamp from current price data cache
-            timestamp = None
-            if isinstance(self.current_price_data, dict):
-                timestamp = self.current_price_data.get('timestamp', None)
-            self.screen_manager.draw_footer(timestamp)
+        # Draw footer with timestamp from current price data cache
+        timestamp = None
+        if isinstance(self.current_price_data, dict):
+            timestamp = self.current_price_data.get('timestamp', None)
+        self.screen_manager.draw_footer(timestamp)
 
-            # Check if ATH data is loaded
-            if not self.ath_data or self.ath_data.get("ath_usd") is None:
-                self.screen_manager.draw_centered_text("ATH Data N/A", scale=3, y_offset=0) # Centered, larger text
-                gc.collect()
-                return
+        # Check if ATH data is loaded
+        if not self.ath_data or self.ath_data.get("ath_usd") is None:
+            self.screen_manager.draw_centered_text("ATH Data N/A", scale=3, y_offset=0) # Centered, larger text
+            gc.collect()
+            return
 
-            ath_price = self.ath_data["ath_usd"]
-            ath_date_str = self.ath_data.get("ath_date_usd", "Unknown date")
-            ath_date_formatted = ath_date_str.split("T")[0] if isinstance(ath_date_str, str) else "Unknown date"
-            ath_price_str = f"${int(ath_price):,}" # Pre-format the price string
+        ath_price = self.ath_data["ath_usd"]
+        ath_date_str = self.ath_data.get("ath_date_usd", "Unknown date")
+        ath_date_formatted = ath_date_str.split("T")[0] if isinstance(ath_date_str, str) else "Unknown date"
 
-
-            # Title "BTC DOLLAR ATH"
-            self.screen_manager.draw_centered_text("BTC DOLLAR ATH", scale=3, y_offset=-60)
+        # Title "BTC DOLLAR ATH"
+        self.screen_manager.draw_centered_text("BTC DOLLAR ATH", scale=3, y_offset=-60)
         
         # ATH Price - large and prominent, similar to bitcoin_applet price display
-            self.screen_manager.draw_centered_text(ath_price_str, y_offset=-10) # Use pre-formatted string
+        self.screen_manager.draw_centered_text(f"${int(ath_price):,}", y_offset=-10) # Default scale, moved up
 
-            # ATH Date (scale 2, below ATH price)
-            self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
+        # ATH Date (scale 2, below ATH price)
+        self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
 
-            # Check if current price data is available
-            current_price = None
+        # Check if current price data is available
+        current_price = None
         if isinstance(self.current_price_data, dict):
             price_data = self.current_price_data.get('data', {})
             if isinstance(price_data, dict):

@@ -23,9 +23,8 @@ class ath_eur_applet(BaseApplet):
         self.data_manager = data_manager
         self.api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCEUR" # For current price
         self.current_price_data = None # Store current price data fetched in update()
-        self.ath_data = None # Store ATH data loaded in __init__ from ath.json
+        self.ath_data = None # Store ATH data loaded in start() from ath.json
         self.register()
-        self._load_ath_data()
 
     def _load_ath_data(self):
         """Load ATH data from the common ath.json file."""
@@ -60,62 +59,39 @@ class ath_eur_applet(BaseApplet):
 
     async def update(self):
         # Fetch current price data from Binance
-        if self.current_price_data and self.ath_data:
-            current_price = float(self.current_price_data['data']['lastPrice'])
-            if current_price > self.ath_data.get('ath_eur', 0): # Handle potential missing 'ath_eur'
-                fetch_timestamp = self.current_price_data.get('timestamp')
-                if fetch_timestamp:
-                    t = time.gmtime(fetch_timestamp)
-                    new_ath_date_str = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(t[0], t[1], t[2], t[3], t[4], t[5])
-                else:
-                    t = time.gmtime(time.time())
-                    new_ath_date_str = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(t[0], t[1], t[2], t[3], t[4], t[5])
-
-                print(f"[ath_eur_applet] New ATH EUR detected: {current_price} (was {self.ath_data.get('ath_eur')}) on {new_ath_date_str}")
-                self.ath_data["ath_eur"] = current_price
-                self.ath_data["ath_date_eur"] = new_ath_date_str
-                try:
-                    with open("ath.json", "w") as f:
-                        json.dump(self.ath_data, f)
-                    print("[ath_eur_applet] Updated ath.json with new EUR ATH.")
-                except Exception as e:
-                    print(f"[ath_eur_applet] Error writing updated ath.json: {e}")
-                self.needs_redraw = True
-
+        self.current_price_data = self.data_manager.get_cached_data(self.api_url)
         gc.collect()
 
     async def draw(self):
-        if self.needs_redraw:
-            self.screen_manager.clear()
-            self.screen_manager.draw_header("Bitcoin EUR ATH")
+        self.screen_manager.clear()
+        self.screen_manager.draw_header("Bitcoin EUR ATH")
 
-            timestamp = None
-            if isinstance(self.current_price_data, dict): # Timestamp from current price fetch
-                timestamp = self.current_price_data.get('timestamp', None)
-            self.screen_manager.draw_footer(timestamp)
+        timestamp = None
+        if isinstance(self.current_price_data, dict): # Timestamp from current price fetch
+            timestamp = self.current_price_data.get('timestamp', None)
+        self.screen_manager.draw_footer(timestamp)
 
-            # Check if ATH data is loaded from ath.json
-            if not self.ath_data or self.ath_data.get("ath_eur") is None:
-                self.screen_manager.draw_centered_text("ATH EUR Data N/A", scale=3, y_offset=0)
-                gc.collect()
-                return
+        # Check if ATH data is loaded from ath.json
+        if not self.ath_data or self.ath_data.get("ath_eur") is None:
+            self.screen_manager.draw_centered_text("ATH EUR Data N/A", scale=3, y_offset=0)
+            gc.collect()
+            return
 
-            ath_price_eur = self.ath_data["ath_eur"]
-            ath_date_str_eur = self.ath_data.get("ath_date_eur", "Unknown date")
-            ath_date_formatted = ath_date_str_eur.split("T")[0] if isinstance(ath_date_str_eur, str) else "Unknown date"
-            ath_price_eur_str = f"E{int(ath_price_eur):,}" # Pre-format price string
+        ath_price_eur = self.ath_data["ath_eur"]
+        ath_date_str_eur = self.ath_data.get("ath_date_eur", "Unknown date")
+        ath_date_formatted = ath_date_str_eur.split("T")[0] if isinstance(ath_date_str_eur, str) else "Unknown date"
 
-            # Title "BTC EUR ATH"
-            self.screen_manager.draw_centered_text("BTC EUR ATH", scale=3, y_offset=-60)
+        # Title "BTC EUR ATH"
+        self.screen_manager.draw_centered_text("BTC EUR ATH", scale=3, y_offset=-60)
         
         # ATH Price - large and prominent
-            self.screen_manager.draw_centered_text(ath_price_eur_str, y_offset=-10) # Use pre-formatted string
+        self.screen_manager.draw_centered_text(f"E{int(ath_price_eur):,}", y_offset=-10) # Euro symbol replaced with E, space removed
 
-            # ATH Date (scale 2, below ATH price)
-            self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
-
-            # Check if current price data is available (from Binance)
-            current_price_eur = None
+        # ATH Date (scale 2, below ATH price)
+        self.screen_manager.draw_centered_text(f"{ath_date_formatted}", scale=2, y_offset=25)
+        
+        # Check if current price data is available (from Binance)
+        current_price_eur = None
         if isinstance(self.current_price_data, dict):
             price_data = self.current_price_data.get('data', {}) # Binance data structure
             if isinstance(price_data, dict):
