@@ -5,7 +5,7 @@ from micropython import const
 import gc
 
 class bitcoin_applet(BaseApplet):
-    TTL = const(120)
+    TTL = const(61)
 
     def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
         super().__init__('bitcoin_applet', screen_manager)
