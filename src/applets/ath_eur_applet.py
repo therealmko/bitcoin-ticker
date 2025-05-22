@@ -64,7 +64,7 @@ class ath_eur_applet(BaseApplet):
 
     async def draw(self):
         self.screen_manager.clear()
-        self.screen_manager.draw_header("Bitcoin EUR ATH")
+        self.screen_manager.draw_header("BITCOIN vs EURO ATH")
 
         timestamp = None
         if isinstance(self.current_price_data, dict): # Timestamp from current price fetch
@@ -82,7 +82,7 @@ class ath_eur_applet(BaseApplet):
         ath_date_formatted = ath_date_str_eur.split("T")[0] if isinstance(ath_date_str_eur, str) else "Unknown date"
 
         # Title "BTC EUR ATH"
-        self.screen_manager.draw_centered_text("BTC EUR ATH", scale=3, y_offset=-60)
+        self.screen_manager.draw_centered_text("BTC/EUR ATH", scale=3, y_offset=-60)
         
         # ATH Price - large and prominent
         self.screen_manager.draw_centered_text(f"E{int(ath_price_eur):,}", y_offset=-10) # Euro symbol replaced with E, space removed

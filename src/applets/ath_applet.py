@@ -65,7 +65,7 @@ class ath_applet(BaseApplet):
 
     async def draw(self):
         self.screen_manager.clear()
-        self.screen_manager.draw_header("BITCOIN DOLLAR ATH")
+        self.screen_manager.draw_header("BITCOIN vs US DOLLAR ATH")
 
         # Draw footer with timestamp from current price data cache
         timestamp = None
@@ -84,7 +84,7 @@ class ath_applet(BaseApplet):
         ath_date_formatted = ath_date_str.split("T")[0] if isinstance(ath_date_str, str) else "Unknown date"
 
         # Title "BTC DOLLAR ATH"
-        self.screen_manager.draw_centered_text("BTC DOLLAR ATH", scale=3, y_offset=-60)
+        self.screen_manager.draw_centered_text("BTC/USD ATH", scale=3, y_offset=-60)
         
         # ATH Price - large and prominent, similar to bitcoin_applet price display
         self.screen_manager.draw_centered_text(f"${int(ath_price):,}", y_offset=-10) # Default scale, moved up

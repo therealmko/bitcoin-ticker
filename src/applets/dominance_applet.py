@@ -88,7 +88,7 @@ class dominance_applet(BaseApplet):
             dominance_value = float(btc_dominance)
             
             # Display Title "BTC.D"
-            self.screen_manager.draw_centered_text("BTC.D", scale=3, y_offset=-60)
+            self.screen_manager.draw_centered_text("BTC DOMINANCE", scale=3, y_offset=-60)
             
             # Display Dominance Percentage
             # Using y_offset=-10 to match ATH applet's main value position

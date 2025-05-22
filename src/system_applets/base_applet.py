@@ -10,6 +10,8 @@ class BaseApplet:
         self.data = None
         self.should_advance = False
         self.applet_name = applet_name
+        self.needs_redraw = True # Add needs_redraw flag
+
     def getName(self)->str:
         return self.applet_name
 
@@ -38,5 +40,7 @@ class BaseApplet:
 
     async def draw(self):
         """Called every frame to draw the applet's output."""
-        print(f"Drawing applet {self.applet_name}")
-        pass
+        if self.needs_redraw: # Check needs_redraw flag
+            print(f"Drawing applet {self.applet_name}")
+            # ... (drawing logic would go here)
+            self.needs_redraw = False # Reset the flag
