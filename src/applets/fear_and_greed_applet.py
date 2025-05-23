@@ -5,6 +5,7 @@ from micropython import const
 import gc
 import ujson
 import time
+import ujson as json
 
 class fear_and_greed_applet(BaseApplet):
     """
