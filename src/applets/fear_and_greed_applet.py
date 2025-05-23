@@ -17,8 +17,8 @@ class fear_and_greed_applet(BaseApplet):
     TTL = const(14400)
     API_URL = "https://api.alternative.me/fng/"
 
-    def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
-        super().__init__('fear_and_greed_applet', screen_manager)
+    def __init__(self, screen_manager: ScreenManager, data_manager: DataManager, config_manager=None):
+        super().__init__('fear_and_greed_applet', screen_manager, config_manager)
         self.data_manager = data_manager
         self.current_data = None
         self.register()

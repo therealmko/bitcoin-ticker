@@ -150,7 +150,11 @@ class AppletManager:
                 print(f"[AppletManager] Applet not found: {applet_name}")
                 continue
             # Instantiate the applet
-            applet_instance = applet_class(self.screen_manager, self.data_manager)
+            applet_instance = applet_class(
+                self.screen_manager, 
+                self.data_manager, 
+                self.config_manager  # Pass config_manager to all applets
+            )
             # Register its data requirements with the DataManager
             applet_instance.register()
             applets.append(applet_instance)
