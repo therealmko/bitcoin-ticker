@@ -2,16 +2,14 @@ from screen_manager import ScreenManager
 
 
 class BaseApplet:
-    def __init__(self, applet_name, screen_manager, config_manager=None, ticks_on_screen=5):
+    def __init__(self, applet_name, screen_manager, config_manager=None):
         self.screen_manager: ScreenManager = screen_manager
         self.config_manager = config_manager
         self.data_manager = None
-        self.ticks_on_screen = ticks_on_screen
-        self.ticks = 0
         self.data = None
         self.should_advance = False
         self.applet_name = applet_name
-        self.needs_redraw = True # Add needs_redraw flag
+        self.needs_redraw = True
 
     def getName(self)->str:
         return self.applet_name
@@ -35,9 +33,7 @@ class BaseApplet:
 
     async def update(self):
         """Called every frame to update the applet's state."""
-        print(f"Ticks: {self.ticks}")
-        self.ticks += 1
-        return self.should_advance or self.ticks >= self.ticks_on_screen
+        return self.should_advance
 
     async def draw(self):
         """Called every frame to draw the applet's output."""
