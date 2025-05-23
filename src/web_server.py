@@ -698,7 +698,7 @@ async function saveApplets(event) {{
       body: JSON.stringify(applets),
     }});
     if (response.ok) {{
-      alert('Applet selection saved successfully!');
+      alert('Applet selection saved successfully! Device will reboot in a few seconds to apply changes.');
     }} else {{
       alert('Failed to save applet selection');
     }}
