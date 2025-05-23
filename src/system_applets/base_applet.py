@@ -2,8 +2,9 @@ from screen_manager import ScreenManager
 
 
 class BaseApplet:
-    def __init__(self,applet_name, screen_manager, ticks_on_screen=5):
+    def __init__(self, applet_name, screen_manager, config_manager=None, ticks_on_screen=5):
         self.screen_manager: ScreenManager = screen_manager
+        self.config_manager = config_manager
         self.data_manager = None
         self.ticks_on_screen = ticks_on_screen
         self.ticks = 0
