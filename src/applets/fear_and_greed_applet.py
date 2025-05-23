@@ -35,24 +35,21 @@ class fear_and_greed_applet(BaseApplet):
         super().stop()
 
     async def update(self):
-        # Try to load from a dedicated JSON file first
-        try:
-            with open("fng.json", "r") as f:
-                fng_data = json.load(f)
+        # Try to load from config_manager first
+        if self.config_manager:
+            fng_data = self.config_manager.get_fear_and_greed_index()
+            if fng_data['index'] is not None:
                 self.current_data = {
                     'data': {
                         'data': [{
-                            'value': fng_data.get('index', 0),
-                            'value_classification': fng_data.get('classification', 'N/A')
+                            'value': fng_data['index'],
+                            'value_classification': fng_data['classification']
                         }]
                     }
                 }
                 return
-        except (OSError, ValueError):
-            # If file doesn't exist or is invalid, fall back to data manager
-            pass
 
-        # Fallback to data manager if JSON file not found
+        # Fallback to data manager if no config data
         self.current_data = self.data_manager.get_cached_data(self.API_URL)
         gc.collect()
 
