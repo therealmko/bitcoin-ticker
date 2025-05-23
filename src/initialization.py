@@ -292,6 +292,51 @@ class Initializer:
             gc.collect()
 
 
+    async def _fetch_and_process_fear_and_greed(self):
+        """Fetch and store Fear and Greed Index data."""
+        FNG_API_URL = "https://api.alternative.me/fng/"
+        
+        print(f"[Initializer] Fetching Fear and Greed Index data...")
+        await self._show_initializing_screen("Fetching F&G Index")
+
+        try:
+            response_stream = urequests.urlopen(FNG_API_URL)
+            gc.collect()
+
+            # Read the entire response
+            response_body = response_stream.read()
+            response_stream.close()
+            gc.collect()
+
+            # Parse JSON
+            try:
+                fng_data = json.loads(response_body)
+                if (fng_data and 
+                    'data' in fng_data and 
+                    isinstance(fng_data['data'], list) and 
+                    len(fng_data['data']) > 0):
+                    
+                    first_entry = fng_data['data'][0]
+                    index_value = int(first_entry.get('value', 0))
+                    classification = first_entry.get('value_classification', 'N/A')
+
+                    # Use config_manager to store the value
+                    self.config_manager.set_fear_and_greed_index(index_value, classification)
+                    print(f"[Initializer] Stored Fear and Greed Index: {index_value} ({classification})")
+
+                else:
+                    print("[Initializer] Invalid Fear and Greed Index data structure")
+
+            except ValueError as json_err:
+                print(f"[Initializer] JSON parsing error: {json_err}")
+
+        except Exception as e:
+            print(f"[Initializer] Error fetching Fear and Greed Index: {e}")
+            await self._show_initializing_screen("F&G Index Error")
+            await asyncio.sleep(2)
+
+        gc.collect()
+
     async def run_initialization(self):
         """Runs all initialization steps."""
         print("[Initializer] Starting initialization process...")
@@ -304,6 +349,11 @@ class Initializer:
 
         # 2. Fetch and process ATH data if needed
         await self._fetch_and_process_ath()
+        gc.collect()
+        await asyncio.sleep_ms(100) # Small delay
+
+        # 3. Fetch and process Fear and Greed Index
+        await self._fetch_and_process_fear_and_greed()
         gc.collect()
         await asyncio.sleep_ms(100) # Small delay
 

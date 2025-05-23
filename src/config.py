@@ -14,7 +14,10 @@ class ConfigManager:
             "applet_duration": 10,      # Default duration in seconds
             "timezone_offset": 0,       # Default timezone offset (UTC)
             "transition_effect": "None", # Default transition effect
-            "ip_address": "N/A"         # Default IP address
+            "ip_address": "N/A",         # Default IP address
+            "fear_and_greed_index": None,
+            "fear_and_greed_classification": None,
+            "fear_and_greed_timestamp": None
         }
         self.load_config()
 
@@ -130,3 +133,32 @@ class ConfigManager:
             print(f"[ConfigManager] Invalid transition effect '{effect_name}'. Not saving.")
             # Return the current valid value instead of saving an invalid one
             return self.get_transition_effect()
+
+    def get_fear_and_greed_index(self):
+        """Retrieve the stored Fear and Greed Index value."""
+        return {
+            "index": self.config.get("fear_and_greed_index", None),
+            "classification": self.config.get("fear_and_greed_classification", None),
+            "timestamp": self.config.get("fear_and_greed_timestamp", 0)
+        }
+
+    def set_fear_and_greed_index(self, index_value, classification):
+        """
+        Store Fear and Greed Index data.
+        
+        :param index_value: Numeric index (0-100)
+        :param classification: Text classification of the index
+        """
+        try:
+            index_value = int(index_value)
+            index_value = max(0, min(100, index_value))  # Clamp between 0-100
+            
+            self.config["fear_and_greed_index"] = index_value
+            self.config["fear_and_greed_classification"] = str(classification)
+            self.config["fear_and_greed_timestamp"] = int(time.time())
+            
+            self.save_config()
+            return True
+        except (ValueError, TypeError):
+            print("[ConfigManager] Invalid Fear and Greed Index data")
+            return False
