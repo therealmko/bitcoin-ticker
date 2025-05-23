@@ -152,8 +152,7 @@ class AppletManager:
             # Instantiate the applet
             applet_instance = applet_class(
                 self.screen_manager, 
-                self.data_manager, 
-                self.config_manager  # Pass config_manager to all applets
+                self.data_manager
             )
             # Register its data requirements with the DataManager
             applet_instance.register()

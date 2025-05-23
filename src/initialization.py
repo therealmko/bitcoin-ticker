@@ -320,9 +320,17 @@ class Initializer:
                     index_value = int(first_entry.get('value', 0))
                     classification = first_entry.get('value_classification', 'N/A')
 
-                    # Use config_manager to store the value
-                    self.config_manager.set_fear_and_greed_index(index_value, classification)
-                    print(f"[Initializer] Stored Fear and Greed Index: {index_value} ({classification})")
+                    # Save to a dedicated JSON file
+                    fng_output = {
+                        "index": index_value,
+                        "classification": classification
+                    }
+                    try:
+                        with open("fng.json", "w") as f:
+                            json.dump(fng_output, f)
+                        print(f"[Initializer] Successfully saved Fear and Greed Index to fng.json")
+                    except Exception as e:
+                        print(f"[Initializer] ERROR: Failed to write fng.json: {e}")
 
                 else:
                     print("[Initializer] Invalid Fear and Greed Index data structure")

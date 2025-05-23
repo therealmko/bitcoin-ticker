@@ -34,50 +34,25 @@ class fear_and_greed_applet(BaseApplet):
         super().stop()
 
     async def update(self):
-        # Get current timestamp and stored data from config
-        current_time = int(time.time())
-        fng_data = self.config_manager.get_fear_and_greed_index()
-        
-        # Check if data needs refreshing based on TTL
-        if (not fng_data['index'] or 
-            current_time - fng_data['timestamp'] > self.TTL):
-            
-            try:
-                response = self.data_manager.get_cached_data(self.API_URL)
-                
-                if response and 'data' in response:
-                    fng_data_list = response['data'].get('data', [])
-                    
-                    if fng_data_list:
-                        first_entry = fng_data_list[0]
-                        index_value = int(first_entry.get('value', 0))
-                        classification = first_entry.get('value_classification', 'N/A')
-                        
-                        # Update config with new data
-                        self.config_manager.set_fear_and_greed_index(
-                            index_value, 
-                            classification
-                        )
-                        
-                        # Refresh local data
-                        fng_data = {
-                            'index': index_value,
-                            'classification': classification
-                        }
-            
-            except Exception as e:
-                print(f"[FearAndGreedApplet] Update error: {e}")
-        
-        # Use the data (from config or just fetched)
-        self.current_data = {
-            'data': {
-                'data': [{
-                    'value': fng_data['index'],
-                    'value_classification': fng_data['classification']
-                }]
-            }
-        }
-        
+        # Try to load from a dedicated JSON file first
+        try:
+            with open("fng.json", "r") as f:
+                fng_data = json.load(f)
+                self.current_data = {
+                    'data': {
+                        'data': [{
+                            'value': fng_data.get('index', 0),
+                            'value_classification': fng_data.get('classification', 'N/A')
+                        }]
+                    }
+                }
+                return
+        except (OSError, ValueError):
+            # If file doesn't exist or is invalid, fall back to data manager
+            pass
+
+        # Fallback to data manager if JSON file not found
+        self.current_data = self.data_manager.get_cached_data(self.API_URL)
         gc.collect()
 
     def _calculate_color_for_index(self, index_value):
