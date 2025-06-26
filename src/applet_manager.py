@@ -40,7 +40,6 @@ class AppletManager:
 
         self.next_applet_data = None
 
-        gc.collect()
         # Remove instantiation here, use the passed instance
         # self.config_manager = ConfigManager()
 
@@ -213,7 +212,6 @@ class AppletManager:
                 print(f"[AppletManager] Running exit transition: {selected_transition_name}")
                 await exit_transition(self.screen_manager) # Run exit transition before stopping
             self.current_applet.stop()
-            gc.collect()
 
         # --- Start New Applet ---
         print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
@@ -285,7 +283,6 @@ class AppletManager:
         print(f"[AppletManager] Starting applet: {applet.__class__.__name__}")
         if self.current_applet:
             self.current_applet.stop()
-            gc.collect()
         try:
             self.screen_manager.clear()
             self.current_applet = applet
@@ -318,7 +315,6 @@ class AppletManager:
         print(f"[AppletManager] Exception occurred: {exception}")
         if self.current_applet:
             self.current_applet.stop()
-            gc.collect()
 
         error_message = str(exception)
         error_applet = ErrorApplet(self.screen_manager, error_message)

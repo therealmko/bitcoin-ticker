@@ -31,7 +31,6 @@ class bitcoin_applet(BaseApplet):
         # Fetch data in update
         self.current_data = self.data_manager.get_cached_data(self.api_url)
         # print(f"[bitcoin_applet] Updated data: {self.current_data}") # Optional debug
-        gc.collect()
         # No need to call super().update()
 
     async def draw(self):
@@ -56,58 +55,3 @@ class bitcoin_applet(BaseApplet):
                  return # Stop drawing if data format is wrong
 
             price = bitcoin_data.get('lastPrice')
-            change_percent = bitcoin_data.get('priceChangePercent')
-
-            if price is not None and change_percent is not None:
-                try:
-                    usd_price = float(price)
-                    change = float(change_percent)
-
-                    # Draw the label, price and change
-                    self.screen_manager.draw_centered_text("BTC/USD", scale=3, y_offset=-60)
-                    self.screen_manager.draw_centered_text(f"${int(usd_price):,}")
-
-                    # Draw the change percentage with indicator triangle
-                    change_text = f"24h change: {change:+.2f}%"
-                    text_width = self.screen_manager.display.measure_text(change_text, scale=2)
-                    x = (self.screen_manager.width - text_width) // 2
-                    y = (self.screen_manager.height - 16) // 2 + 60 # 16 = text height scale 2
-
-                    triangle_size = 10
-                    triangle_x = x - triangle_size - 5
-                    triangle_y = y + 8 # Approx vertical center
-
-                    triangle_color_name = "POSITIVE_COLOR" if change >= 0 else "NEGATIVE_COLOR"
-                    triangle_color = self.screen_manager.theme[triangle_color_name]
-                    self.screen_manager.display.set_pen(self.screen_manager.get_pen(triangle_color))
-
-                    if change >= 0: # Upward triangle
-                        self.screen_manager.display.triangle(
-                            triangle_x, triangle_y,
-                            triangle_x + triangle_size, triangle_y,
-                            triangle_x + (triangle_size // 2), triangle_y - triangle_size
-                        )
-                    else: # Downward triangle
-                        self.screen_manager.display.triangle(
-                            triangle_x, triangle_y - triangle_size,
-                            triangle_x + triangle_size, triangle_y - triangle_size,
-                            triangle_x + (triangle_size // 2), triangle_y
-                        )
-
-                    # Draw the text (use default color)
-                    self.screen_manager.draw_text(change_text, x, y, scale=2)
-
-                except (ValueError, TypeError) as e:
-                    print(f"[bitcoin_applet] Error converting values: {e}")
-                    self.screen_manager.draw_centered_text("Data Error")
-            else:
-                # Handle missing price or change data
-                self.screen_manager.draw_centered_text("N/A")
-        else:
-            # Handle case where self.current_data is not a dict (unexpected)
-            self.screen_manager.draw_centered_text("Error")
-            print(f"[bitcoin_applet] Unexpected data type: {type(self.current_data)}")
-
-        # screen_manager.update() is called by AppletManager or transition
-        # self.drawn flag removed
-        gc.collect()
