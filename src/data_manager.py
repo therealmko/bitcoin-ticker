@@ -3,7 +3,6 @@ import urequests
 import time
 import json
 import os
-import uhashlib
 from pimoroni import RGBLED
 
 
@@ -81,7 +80,9 @@ class DataManager:
         :param url: The URL to hash.
         :return: A hash as a string.
         """
-        return str(uhashlib.crc32(url.encode('utf-8')))
+        # If possible, use a more robust function or a library like uhashlib
+        # For demonstration, we keep your approach
+        return str(sum(ord(c) for c in url) % 10000)
 
     def _get_cache_file_path(self, url: str) -> str:
         """
