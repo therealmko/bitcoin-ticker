@@ -4,6 +4,8 @@ from data_manager import DataManager
 from micropython import const
 import gc
 import ujson
+import time
+import ujson as json
 
 class fear_and_greed_applet(BaseApplet):
     """
@@ -16,8 +18,8 @@ class fear_and_greed_applet(BaseApplet):
     TTL = const(14400)
     API_URL = "https://api.alternative.me/fng/"
 
-    def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
-        super().__init__('fear_and_greed_applet', screen_manager)
+    def __init__(self, screen_manager: ScreenManager, data_manager: DataManager, config_manager=None):
+        super().__init__('fear_and_greed_applet', screen_manager, config_manager)
         self.data_manager = data_manager
         self.current_data = None
         self.register()
@@ -33,6 +35,21 @@ class fear_and_greed_applet(BaseApplet):
         super().stop()
 
     async def update(self):
+        # Try to load from config_manager first
+        if self.config_manager:
+            fng_data = self.config_manager.get_fear_and_greed_index()
+            if fng_data['index'] is not None:
+                self.current_data = {
+                    'data': {
+                        'data': [{
+                            'value': fng_data['index'],
+                            'value_classification': fng_data['classification']
+                        }]
+                    }
+                }
+                return
+
+        # Fallback to data manager if no config data
         self.current_data = self.data_manager.get_cached_data(self.API_URL)
         gc.collect()
 
