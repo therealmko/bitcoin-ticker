@@ -141,18 +141,22 @@ class AsyncWebServer:
         print("Select Applets")
         _, body = self.parse_request_body(request_lines)
         try:
-            request= json.loads(body)
+            request = json.loads(body)
             self.applet_manager.update_applets(request)
             print("[AsyncWebServer] Updated applet selection:", request)
             response = (
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/plain\r\n"
                 "Connection: close\r\n\r\n"
-                "Applet selection updated successfully!"
+                "Applet selection updated. Rebooting device..."
             )
             writer.write(response.encode('utf-8'))
             await writer.drain()
-        except  Exception as e :
+            
+            # Trigger device reboot after sending response
+            import machine
+            machine.reset()
+        except Exception as e:
             print(e)
             error_message = str(e)  # Convert exception to string
             response = (
@@ -694,7 +698,7 @@ async function saveApplets(event) {{
       body: JSON.stringify(applets),
     }});
     if (response.ok) {{
-      alert('Applet selection saved successfully!');
+      alert('Applet selection saved successfully! Device will reboot in a few seconds to apply changes.');
     }} else {{
       alert('Failed to save applet selection');
     }}
