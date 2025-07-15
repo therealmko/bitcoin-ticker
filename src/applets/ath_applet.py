@@ -107,7 +107,8 @@ class ath_applet(BaseApplet):
         # Display Combined Current Price and Percentage Difference (scale 2)
         if current_price is not None:
             # Check for new ATH before calculating percentage
-            if self.ath_data and current_price > self.ath_data.get("ath_usd", 0):
+            stored_ath = self.ath_data.get("ath_usd", 0) if self.ath_data else 0
+            if current_price >= stored_ath and current_price > 0:
                 fetch_timestamp = self.current_price_data.get('timestamp')
                 if fetch_timestamp:
                     t = time.gmtime(fetch_timestamp) # Use gmtime for UTC
@@ -116,9 +117,11 @@ class ath_applet(BaseApplet):
                     t = time.gmtime(time.time())
                     new_ath_date_str = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(t[0], t[1], t[2], t[3], t[4], t[5])
 
-                print(f"[ath_applet] New ATH USD detected: {current_price} (was {self.ath_data.get('ath_usd')}) on {new_ath_date_str}")
-                self.ath_data["ath_usd"] = current_price
-                self.ath_data["ath_date_usd"] = new_ath_date_str
+                # Only update if it's truly higher (avoiding float comparison issues)
+                if current_price > stored_ath:
+                    print(f"[ath_applet] New ATH USD detected: {current_price} (was {stored_ath}) on {new_ath_date_str}")
+                    self.ath_data["ath_usd"] = current_price
+                    self.ath_data["ath_date_usd"] = new_ath_date_str
                 
                 # Update local variables for the current draw cycle
                 ath_price = current_price

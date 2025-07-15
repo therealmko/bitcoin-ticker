@@ -76,10 +76,9 @@ class DataManager:
 
     def _get_hash(self, url: str) -> str:
         """
-        Generate a short hash for the URL.
-        NOTE: This is not cryptographically secure and may collide with many endpoints.
+        Generate a hash for the URL using CRC32.
         :param url: The URL to hash.
-        :return: A short hash as a string.
+        :return: A hash as a string.
         """
         # If possible, use a more robust function or a library like uhashlib
         # For demonstration, we keep your approach

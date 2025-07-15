@@ -105,7 +105,8 @@ class ath_eur_applet(BaseApplet):
         # Display Combined Current Price and Percentage Difference (scale 2)
         if current_price_eur is not None:
             # Check for new ATH before calculating percentage
-            if self.ath_data and current_price_eur > self.ath_data.get("ath_eur", 0):
+            stored_ath = self.ath_data.get("ath_eur", 0) if self.ath_data else 0
+            if current_price_eur >= stored_ath and current_price_eur > 0:
                 fetch_timestamp = self.current_price_data.get('timestamp')
                 if fetch_timestamp:
                     t = time.gmtime(fetch_timestamp) # Use gmtime for UTC
@@ -114,9 +115,11 @@ class ath_eur_applet(BaseApplet):
                     t = time.gmtime(time.time())
                     new_ath_date_str = "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(t[0], t[1], t[2], t[3], t[4], t[5])
 
-                print(f"[ath_eur_applet] New ATH EUR detected: {current_price_eur} (was {self.ath_data.get('ath_eur')}) on {new_ath_date_str}")
-                self.ath_data["ath_eur"] = current_price_eur
-                self.ath_data["ath_date_eur"] = new_ath_date_str
+                # Only update if it's truly higher (avoiding float comparison issues)
+                if current_price_eur > stored_ath:
+                    print(f"[ath_eur_applet] New ATH EUR detected: {current_price_eur} (was {stored_ath}) on {new_ath_date_str}")
+                    self.ath_data["ath_eur"] = current_price_eur
+                    self.ath_data["ath_date_eur"] = new_ath_date_str
 
                 # Update local variables for the current draw cycle
                 ath_price_eur = current_price_eur # This was the variable name used below
