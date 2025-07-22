@@ -117,10 +117,6 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                 prev_ratio = prev_price / gold_price
                 change_percent = ((ratio - prev_ratio) / prev_ratio) * 100
 
-                # Display prices on one line (moved up)
-                prices_text = f"BTC: ${int(btc_price):,} | Gold: ${int(gold_price):,}/oz"
-                self.screen_manager.draw_centered_text(prices_text, scale=2, y_offset=40)
-
                 # Draw the change percentage with indicator triangle
                 change_text = f"24h change: {change_percent:+.2f}%"
                 text_width = self.screen_manager.display.measure_text(change_text, scale=2)
