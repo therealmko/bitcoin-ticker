@@ -70,9 +70,8 @@ class bitcoin_gold_ratio_applet(BaseApplet):
             return
 
         try:
-            # Get BTC price from Binance data
-            btc_data = self.current_price_data.get('data', {})
-            btc_price = float(btc_data.get('lastPrice', 0))
+            # Get BTC price directly from Binance response (no nested 'data' field)
+            btc_price = float(self.current_price_data.get('lastPrice', 0))
 
             # Get Gold price from our cached data
             gold_price = float(self.gold_price_data.get('price', 0))
