@@ -112,12 +112,44 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                 # Display ratio (centered, main focus)
                 self.screen_manager.draw_centered_text(f"{ratio:.2f}", scale=8, y_offset=0)
                 
-                # Display individual prices with more spacing
-                btc_text = f"BTC: ${int(btc_price):,}"
-                gold_text = f"Gold: ${int(gold_price):,}/oz"
-                
-                self.screen_manager.draw_centered_text(btc_text, scale=2, y_offset=50)
-                self.screen_manager.draw_centered_text(gold_text, scale=2, y_offset=75)
+                # Calculate 24h change percentage if available
+                prev_price = float(bitcoin_data.get('prevClosePrice', btc_price))
+                prev_ratio = prev_price / gold_price
+                change_percent = ((ratio - prev_ratio) / prev_ratio) * 100
+
+                # Display prices on one line
+                prices_text = f"BTC: ${int(btc_price):,} | Gold: ${int(gold_price):,}/oz"
+                self.screen_manager.draw_centered_text(prices_text, scale=2, y_offset=50)
+
+                # Draw the change percentage with indicator triangle
+                change_text = f"24h change: {change_percent:+.2f}%"
+                text_width = self.screen_manager.display.measure_text(change_text, scale=2)
+                x = (self.screen_manager.width - text_width) // 2
+                y = (self.screen_manager.height - 16) // 2 + 60
+
+                triangle_size = 10
+                triangle_x = x - triangle_size - 5
+                triangle_y = y + 8
+
+                triangle_color_name = "POSITIVE_COLOR" if change_percent >= 0 else "NEGATIVE_COLOR"
+                triangle_color = self.screen_manager.theme[triangle_color_name]
+                self.screen_manager.display.set_pen(self.screen_manager.get_pen(triangle_color))
+
+                if change_percent >= 0:  # Upward triangle
+                    self.screen_manager.display.triangle(
+                        triangle_x, triangle_y,
+                        triangle_x + triangle_size, triangle_y,
+                        triangle_x + (triangle_size // 2), triangle_y - triangle_size
+                    )
+                else:  # Downward triangle
+                    self.screen_manager.display.triangle(
+                        triangle_x, triangle_y - triangle_size,
+                        triangle_x + triangle_size, triangle_y - triangle_size,
+                        triangle_x + (triangle_size // 2), triangle_y
+                    )
+
+                # Draw the change text
+                self.screen_manager.draw_text(change_text, x, y, scale=2)
 
             else:
                 self.screen_manager.draw_centered_text("Invalid Price Data")
