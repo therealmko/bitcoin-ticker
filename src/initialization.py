@@ -309,17 +309,18 @@ class Initializer:
             
             try:
                 gold_data = json.loads(response_body)
-                if 'price' in gold_data:
-                    # Use ConfigManager to store gold price
-                    success = self.config_manager.set_gold_price(gold_data['price'])
-                    if success:
-                        print(f"[Initializer] Successfully saved gold price ${gold_data['price']} to config.json")
+                if isinstance(gold_data, dict):
+                    # The API returns the price directly in the root object
+                    price = float(gold_data.get('price', 0))
+                    if price > 0:
+                        self.config_manager.set_gold_price(price)
+                        print(f"[Initializer] Successfully saved gold price ${price} to config.json")
                     else:
-                        print("[Initializer] Failed to save gold price to config.json")
+                        print("[Initializer] Invalid gold price value")
                 else:
-                    print("[Initializer] Invalid gold price data structure - missing 'price' field")
-            except ValueError as json_err:
-                print(f"[Initializer] JSON parsing error: {json_err}")
+                    print("[Initializer] Invalid gold price data structure - expected dictionary")
+            except (ValueError, TypeError) as err:
+                print(f"[Initializer] Error parsing gold price data: {err}")
                 
         except Exception as e:
             print(f"[Initializer] Error fetching gold price: {e}")
