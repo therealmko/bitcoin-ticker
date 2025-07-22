@@ -21,7 +21,8 @@ from applets import (
     ath_applet, # Import the new applet
     fear_and_greed_applet, # Import the Fear and Greed applet
     dominance_applet, # Import the Bitcoin Dominance applet
-    ath_eur_applet # Import the Bitcoin EUR ATH applet
+    ath_eur_applet, # Import the Bitcoin EUR ATH applet
+    bitcoin_gold_ratio_applet # Import the Bitcoin Gold applet
 )
 from config import ConfigManager
 
@@ -59,6 +60,7 @@ class AppletManager:
             "fear_and_greed_applet": fear_and_greed_applet.fear_and_greed_applet, # Add Fear and Greed applet
             "dominance_applet": dominance_applet.dominance_applet, # Add Bitcoin Dominance applet
             "ath_eur_applet": ath_eur_applet.ath_eur_applet, # Add Bitcoin EUR ATH applet
+            "bitcoin_gold_ratio_applet": bitcoin_gold_ratio_applet.bitcoin_gold_ratio_applet, # Add Bitcoin vs Gold applet
         }
         self.applets = self.load_applets()
 
