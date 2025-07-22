@@ -23,7 +23,6 @@ class Initializer:
     APPLET_CONFIG_FILE = "applets.json"
     ATH_DATA_FILE = "ath.json" # Changed filename
     ATH_DUMP_FILE = "ath_dump.tmp" # Temporary file for raw API data
-    GOLD_DATA_FILE = "gold.json"
 
     def __init__(self, screen_manager: ScreenManager, config_manager: ConfigManager, applet_manager): # Added applet_manager
         self.screen_manager = screen_manager
@@ -295,11 +294,8 @@ class Initializer:
 
 
     async def _fetch_and_process_gold(self):
-        """Fetches gold price data and saves it."""
-        if self._file_exists(self.GOLD_DATA_FILE):
-            print(f"[Initializer] {self.GOLD_DATA_FILE} found. Updating gold price.")
-        else:
-            print(f"[Initializer] {self.GOLD_DATA_FILE} not found. Fetching gold price...")
+        """Fetches gold price data and saves it to config.json via ConfigManager."""
+        print(f"[Initializer] Fetching gold price data...")
         
         await self._show_initializing_screen("Fetching Gold")
         
@@ -313,16 +309,15 @@ class Initializer:
             
             try:
                 gold_data = json.loads(response_body)
-                if 'price' in gold_data and 'updatedAt' in gold_data:
-                    gold_output = {
-                        'price': gold_data['price'],
-                        'timestamp': gold_data['updatedAt']
-                    }
-                    with open(self.GOLD_DATA_FILE, "w") as f:
-                        json.dump(gold_output, f)
-                    print(f"[Initializer] Successfully saved gold price data to {self.GOLD_DATA_FILE}")
+                if 'price' in gold_data:
+                    # Use ConfigManager to store gold price
+                    success = self.config_manager.set_gold_price(gold_data['price'])
+                    if success:
+                        print(f"[Initializer] Successfully saved gold price ${gold_data['price']} to config.json")
+                    else:
+                        print("[Initializer] Failed to save gold price to config.json")
                 else:
-                    print("[Initializer] Invalid gold price data structure")
+                    print("[Initializer] Invalid gold price data structure - missing 'price' field")
             except ValueError as json_err:
                 print(f"[Initializer] JSON parsing error: {json_err}")
                 
