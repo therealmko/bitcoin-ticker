@@ -106,18 +106,18 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                 ounces = btc_price / gold_price
                 ratio = ounces
                 
-                # Display header
+                # Display header (same as bitcoin_applet)
                 self.screen_manager.draw_centered_text("1 BTC in oz Gold", scale=3, y_offset=-60)
                 
-                # Display ratio
-                self.screen_manager.draw_centered_text(f"{ratio:.2f}", scale=8, y_offset=-10)
+                # Display ratio (centered, main focus)
+                self.screen_manager.draw_centered_text(f"{ratio:.2f}", scale=8)
                 
-                # Display individual prices
+                # Display individual prices (matching bitcoin_applet's spacing)
                 btc_text = f"BTC: ${int(btc_price):,}"
                 gold_text = f"Gold: ${int(gold_price):,}/oz"
                 
-                self.screen_manager.draw_centered_text(btc_text, scale=2, y_offset=20)
-                self.screen_manager.draw_centered_text(gold_text, scale=2, y_offset=50)
+                self.screen_manager.draw_centered_text(btc_text, scale=2, y_offset=40)
+                self.screen_manager.draw_centered_text(gold_text, scale=2, y_offset=60)
 
             else:
                 self.screen_manager.draw_centered_text("Invalid Price Data")
