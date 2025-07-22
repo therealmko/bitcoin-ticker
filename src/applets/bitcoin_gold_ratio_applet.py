@@ -16,8 +16,8 @@ class bitcoin_gold_ratio_applet(BaseApplet):
     """
     TTL = const(300)  # 5 minutes, gold price updates less frequently
 
-    def __init__(self, screen_manager: ScreenManager, data_manager: DataManager):
-        super().__init__('bitcoin_gold_ratio_applet', screen_manager)
+    def __init__(self, screen_manager: ScreenManager, data_manager: DataManager, config_manager=None):
+        super().__init__('bitcoin_gold_ratio_applet', screen_manager, config_manager)
         self.data_manager = data_manager
         self.btc_api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
         self.gold_api_url = "https://api.gold-api.com/price/XAU"
@@ -35,18 +35,17 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         super().stop()
 
     def _load_gold_data(self):
-        """Load gold price data from the JSON file."""
-        try:
-            with open("gold.json", "r") as f:
-                self.gold_price_data = json.load(f)
-        except OSError as e:
-            if e.args[0] == uerrno.ENOENT:
-                print("[bitcoin_gold_ratio_applet] gold.json not found.")
+        """Load gold price data from config manager."""
+        if self.config_manager:
+            gold_data = self.config_manager.get_gold_price()
+            if gold_data["price"] is not None:
+                self.gold_price_data = {"price": gold_data["price"]}
+                print(f"[bitcoin_gold_ratio_applet] Loaded gold price from config: ${gold_data['price']}")
             else:
-                print(f"[bitcoin_gold_ratio_applet] Error loading gold.json: {e}")
-            self.gold_price_data = None
-        except Exception as e:
-            print(f"[bitcoin_gold_ratio_applet] Error reading gold data: {e}")
+                print("[bitcoin_gold_ratio_applet] No gold price found in config.")
+                self.gold_price_data = None
+        else:
+            print("[bitcoin_gold_ratio_applet] No config manager available.")
             self.gold_price_data = None
 
     def register(self):
@@ -93,7 +92,7 @@ class bitcoin_gold_ratio_applet(BaseApplet):
             # If gold data came from API cache, it has nested structure
             gold_data = self.gold_price_data.get('data', {})
         else:
-            # If gold data came from file, it's direct
+            # If gold data came from config or direct API, it's direct
             gold_data = self.gold_price_data or {}
 
         try:
