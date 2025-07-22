@@ -19,9 +19,11 @@ class Initializer:
     - Fetches and stores Bitcoin ATH data if not present.
     """
     ATH_API_URL = "https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
+    GOLD_API_URL = "https://api.gold-api.com/price/XAU"
     APPLET_CONFIG_FILE = "applets.json"
     ATH_DATA_FILE = "ath.json" # Changed filename
     ATH_DUMP_FILE = "ath_dump.tmp" # Temporary file for raw API data
+    GOLD_DATA_FILE = "gold.json"
 
     def __init__(self, screen_manager: ScreenManager, config_manager: ConfigManager, applet_manager): # Added applet_manager
         self.screen_manager = screen_manager
@@ -292,6 +294,45 @@ class Initializer:
             gc.collect()
 
 
+    async def _fetch_and_process_gold(self):
+        """Fetches gold price data and saves it."""
+        if self._file_exists(self.GOLD_DATA_FILE):
+            print(f"[Initializer] {self.GOLD_DATA_FILE} found. Updating gold price.")
+        else:
+            print(f"[Initializer] {self.GOLD_DATA_FILE} not found. Fetching gold price...")
+        
+        await self._show_initializing_screen("Fetching Gold")
+        
+        try:
+            response_stream = urequests.urlopen(self.GOLD_API_URL)
+            gc.collect()
+            
+            response_body = response_stream.read()
+            response_stream.close()
+            gc.collect()
+            
+            try:
+                gold_data = json.loads(response_body)
+                if 'price' in gold_data and 'updatedAt' in gold_data:
+                    gold_output = {
+                        'price': gold_data['price'],
+                        'timestamp': gold_data['updatedAt']
+                    }
+                    with open(self.GOLD_DATA_FILE, "w") as f:
+                        json.dump(gold_output, f)
+                    print(f"[Initializer] Successfully saved gold price data to {self.GOLD_DATA_FILE}")
+                else:
+                    print("[Initializer] Invalid gold price data structure")
+            except ValueError as json_err:
+                print(f"[Initializer] JSON parsing error: {json_err}")
+                
+        except Exception as e:
+            print(f"[Initializer] Error fetching gold price: {e}")
+            await self._show_initializing_screen("Gold Price Error")
+            await asyncio.sleep(2)
+        
+        gc.collect()
+
     async def _fetch_and_process_fear_and_greed(self):
         """Fetch and store Fear and Greed Index data."""
         FNG_API_URL = "https://api.alternative.me/fng/"
@@ -354,6 +395,11 @@ class Initializer:
 
         # 3. Fetch and process Fear and Greed Index
         await self._fetch_and_process_fear_and_greed()
+        gc.collect()
+        await asyncio.sleep_ms(100) # Small delay
+
+        # 4. Fetch and process Gold price
+        await self._fetch_and_process_gold()
         gc.collect()
         await asyncio.sleep_ms(100) # Small delay
 
