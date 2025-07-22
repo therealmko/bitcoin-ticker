@@ -54,32 +54,54 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         self.data_manager.register_endpoint(self.gold_api_url, self.TTL)
 
     async def update(self):
+        # Fetch data in update
         self.current_price_data = self.data_manager.get_cached_data(self.btc_api_url)
         new_gold_data = self.data_manager.get_cached_data(self.gold_api_url)
         if new_gold_data:
             self.gold_price_data = new_gold_data
-        
+        gc.collect()
+
+    async def draw(self):
+        # Draw uses data fetched by update()
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin/Gold Ratio")
 
         if self.current_price_data is None:
             self.screen_manager.draw_centered_text("Loading BTC Price...")
-            self.screen_manager.update()
             gc.collect()
             return
 
         if self.gold_price_data is None:
             self.screen_manager.draw_centered_text("Loading Gold Price...")
-            self.screen_manager.update()
             gc.collect()
             return
 
-        try:
-            # Get BTC price directly from Binance response (no nested 'data' field)
-            btc_price = float(self.current_price_data.get('lastPrice', 0))
+        # Draw timestamp from the outer cache dictionary
+        self.screen_manager.draw_footer(self.current_price_data.get('timestamp', None))
 
-            # Get Gold price from our cached data
-            gold_price = float(self.gold_price_data.get('price', 0))
+        # Access the nested 'data' dictionary which holds the actual API response
+        bitcoin_data = self.current_price_data.get('data', {})
+        if not isinstance(bitcoin_data, dict):
+            # Handle cases where 'data' might not be a dict (e.g., error response)
+            print(f"[bitcoin_gold_ratio_applet] Unexpected BTC data format: {bitcoin_data}")
+            self.screen_manager.draw_centered_text("BTC Data Error")
+            gc.collect()
+            return
+
+        # Access gold data (could be from file or API cache)
+        if isinstance(self.gold_price_data, dict) and 'data' in self.gold_price_data:
+            # If gold data came from API cache, it has nested structure
+            gold_data = self.gold_price_data.get('data', {})
+        else:
+            # If gold data came from file, it's direct
+            gold_data = self.gold_price_data or {}
+
+        try:
+            # Get BTC price from nested data structure
+            btc_price = float(bitcoin_data.get('lastPrice', 0))
+
+            # Get Gold price
+            gold_price = float(gold_data.get('price', 0))
 
             if btc_price > 0 and gold_price > 0:
                 ratio = btc_price / gold_price
@@ -102,7 +124,4 @@ class bitcoin_gold_ratio_applet(BaseApplet):
             print(f"[bitcoin_gold_ratio_applet] Error: {e}")
             self.screen_manager.draw_centered_text("Data Error")
 
-        # Use timestamp from BTC price data for footer
-        self.screen_manager.draw_footer(self.current_price_data.get('timestamp', None))
-        self.screen_manager.update()
         gc.collect()
