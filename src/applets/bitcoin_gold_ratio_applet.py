@@ -31,6 +31,9 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         self._load_gold_data()
         super().start()
 
+    def stop(self):
+        super().stop()
+
     def _load_gold_data(self):
         """Load gold price data from the JSON file."""
         try:
@@ -55,18 +58,20 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         new_gold_data = self.data_manager.get_cached_data(self.gold_api_url)
         if new_gold_data:
             self.gold_price_data = new_gold_data
-        gc.collect()
-
-    async def draw(self):
+        
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin/Gold Ratio")
 
         if self.current_price_data is None:
             self.screen_manager.draw_centered_text("Loading BTC Price...")
+            self.screen_manager.update()
+            gc.collect()
             return
 
         if self.gold_price_data is None:
             self.screen_manager.draw_centered_text("Loading Gold Price...")
+            self.screen_manager.update()
+            gc.collect()
             return
 
         try:
@@ -99,4 +104,5 @@ class bitcoin_gold_ratio_applet(BaseApplet):
 
         # Use timestamp from BTC price data for footer
         self.screen_manager.draw_footer(self.current_price_data.get('timestamp', None))
+        self.screen_manager.update()
         gc.collect()
