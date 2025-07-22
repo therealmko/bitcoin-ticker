@@ -106,11 +106,11 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                 ounces = btc_price / gold_price
                 ratio = ounces
                 
-                # Display 1 BTC = xxx oz format
-                self.screen_manager.draw_centered_text(f"1 BTC = {ounces:.2f} oz", scale=2, y_offset=-70)
+                # Display header
+                self.screen_manager.draw_centered_text("1 BTC in oz Gold", scale=3, y_offset=-60)
                 
-                # Display ratio on new line
-                self.screen_manager.draw_centered_text(f"Ratio: {ratio:.2f}", scale=2, y_offset=-40)
+                # Display ratio
+                self.screen_manager.draw_centered_text(f"{ratio:.2f}", scale=8, y_offset=-10)
                 
                 # Display individual prices
                 btc_text = f"BTC: ${int(btc_price):,}"
