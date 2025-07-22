@@ -107,7 +107,7 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                 ratio = ounces
                 
                 # Display header
-                self.screen_manager.draw_centered_text("1 BTC in oz Gold", scale=3, y_offset=-60)
+                self.screen_manager.draw_centered_text("BTC/Gold (oz)", scale=3, y_offset=-60)
                 
                 # Display ratio (centered, main focus)
                 self.screen_manager.draw_centered_text(f"{ratio:.2f}", scale=8, y_offset=0)
