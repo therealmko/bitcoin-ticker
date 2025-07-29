@@ -53,7 +53,6 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         self.data_manager.register_endpoint(self.gold_api_url, self.TTL)
 
     async def update(self):
-        # Fetch data in update
         self.current_price_data = self.data_manager.get_cached_data(self.btc_api_url)
         new_gold_data = self.data_manager.get_cached_data(self.gold_api_url)
         if new_gold_data:
@@ -61,7 +60,6 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         gc.collect()
 
     async def draw(self):
-        # Draw uses data fetched by update()
         self.screen_manager.clear()
         self.screen_manager.draw_header("Bitcoin/Gold Ratio")
 
@@ -75,10 +73,8 @@ class bitcoin_gold_ratio_applet(BaseApplet):
             gc.collect()
             return
 
-        # Draw timestamp from the outer cache dictionary
         self.screen_manager.draw_footer(self.current_price_data.get('timestamp', None))
 
-        # Access the nested 'data' dictionary which holds the actual API response
         bitcoin_data = self.current_price_data.get('data', {})
         if not isinstance(bitcoin_data, dict):
             # Handle cases where 'data' might not be a dict (e.g., error response)
@@ -106,13 +102,9 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                 ounces = btc_price / gold_price
                 ratio = ounces
                 
-                # Display header
                 self.screen_manager.draw_centered_text("BTC/Gold (oz)", scale=3, y_offset=-60)
-                
-                # Display ratio (centered, main focus)
                 self.screen_manager.draw_centered_text(f"{ratio:.2f}", scale=8, y_offset=0)
                 
-                # Calculate 24h change percentage if available
                 prev_price = float(bitcoin_data.get('prevClosePrice', btc_price))
                 prev_ratio = prev_price / gold_price
                 change_percent = ((ratio - prev_ratio) / prev_ratio) * 100
@@ -144,7 +136,6 @@ class bitcoin_gold_ratio_applet(BaseApplet):
                         triangle_x + (triangle_size // 2), triangle_y
                     )
 
-                # Draw the change text
                 self.screen_manager.draw_text(change_text, x, y, scale=2)
 
             else:
