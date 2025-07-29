@@ -17,6 +17,7 @@ A Bitcoin price and blockchain information display built with Raspberry Pi Pico 
  
 - 💰 Real-time Bitcoin price display (BTC/USD)
 - 💰 Real-time Bitcoin price display (BTC/EUR)
+- 💰 Real-time Bitcoin price display (BTC/Gold ounces)
 - 💵 Bitcoin vs Dollar ATH display
 - 💶 Bitcoin vs Euro ATH display
 - ⛓️ Current Bitcoin blockchain height display
@@ -90,9 +91,10 @@ The most difficult part to complete at home. All necessary files and measurement
 ### Project Structure
 ```
 src/
-├── applets/                    # Bitcoin information displays
-│   ├── bitcoin_applet.py       # BTC / Dollar price display
-│   ├── bitcoin_eur_applet.py   # BTC / Euro price display
+├── applets/                            # Bitcoin information displays
+│   ├── bitcoin_applet.py               # BTC / Dollar price display
+│   ├── bitcoin_eur_applet.py           # BTC / Euro price display
+│   ├── bitcoin_gold_ratio_applet.py    # BTC / Gold Ounced (oz) price display
 │   ├── ath_applet.py
 │   ├── ath_eur_applet.py
 │   ├── block_height_applet.py
@@ -103,21 +105,21 @@ src/
 │   ├── difficulty_applet.py
 │   ├── dominance_applet.py
 │   └── mempool_status_applet.py
-├── system_applets/             # Core system applets
-│   ├── ap_applet.py            # Access point configuration screen
-│   ├── base_applet.py          # Base class for all applets
-│   ├── error_applet.py         # Error display screen
-│   └── splash_applet.py        # Boot splash screen
-├── applet_manager.py           # Manages applet lifecycle
-├── data_manager.py             # Handles API requests and caching
-├── main.py                     # Application entry point
-├── screen_manager.py           # Display abstraction
-├── urllib_urequest.py          # HTTP client
-├── web_server.py               # Configuration web interface
-├── wifi_manager.py             # Network connection manager
-├── transitions.py              # Utility to help manage applet transition effects
-├── initialization.py           # Utility to help manage initial ticker setup and loading of big datasets
-└── config.py                   # Utility to help manage configurations
+├── system_applets/                     # Core system applets
+│   ├── ap_applet.py                    # Access point configuration screen
+│   ├── base_applet.py                  # Base class for all applets
+│   ├── error_applet.py                 # Error display screen
+│   └── splash_applet.py                # Boot splash screen
+├── applet_manager.py                   # Manages applet lifecycle
+├── data_manager.py                     # Handles API requests and caching
+├── main.py                             # Application entry point
+├── screen_manager.py                   # Display abstraction
+├── urllib_urequest.py                  # HTTP client
+├── web_server.py                       # Configuration web interface
+├── wifi_manager.py                     # Network connection manager
+├── transitions.py                      # Utility to help manage applet transition effects
+├── initialization.py                   # Utility to help manage initial ticker setup and loading of big datasets
+└── config.py                           # Utility to help manage configurations
 ```
 
 ### Dependencies

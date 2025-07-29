@@ -18,7 +18,9 @@ class ConfigManager:
             "ip_address": "N/A",         # Default IP address
             "fear_and_greed_index": None,
             "fear_and_greed_classification": None,
-            "fear_and_greed_timestamp": None
+            "fear_and_greed_timestamp": None,
+            "gold_price": None,         # Gold price per oz in USD
+            "gold_timestamp": None      # Timestamp when gold price was last updated
         }
         self.load_config()
 
@@ -162,4 +164,32 @@ class ConfigManager:
             return True
         except (ValueError, TypeError):
             print("[ConfigManager] Invalid Fear and Greed Index data")
+            return False
+
+    def get_gold_price(self):
+        """Retrieve the stored gold price data."""
+        return {
+            "price": self.config.get("gold_price", None),
+            "timestamp": self.config.get("gold_timestamp", 0)
+        }
+
+    def set_gold_price(self, price):
+        """
+        Store gold price data.
+        
+        :param price: Gold price per oz in USD
+        :return: True if successful, False otherwise
+        """
+        try:
+            price = float(price)
+            if price > 0:  # Validate that price is positive
+                self.config["gold_price"] = price
+                self.config["gold_timestamp"] = int(time.time())
+                self.save_config()
+                return True
+            else:
+                print("[ConfigManager] Invalid gold price: must be positive")
+                return False
+        except (ValueError, TypeError):
+            print("[ConfigManager] Invalid gold price data")
             return False

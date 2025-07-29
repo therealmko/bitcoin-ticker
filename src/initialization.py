@@ -19,6 +19,7 @@ class Initializer:
     - Fetches and stores Bitcoin ATH data if not present.
     """
     ATH_API_URL = "https://api.coingecko.com/api/v3/coins/bitcoin?localization=false&tickers=false&market_data=true&community_data=false&developer_data=false&sparkline=false"
+    GOLD_API_URL = "https://api.gold-api.com/price/XAU"
     APPLET_CONFIG_FILE = "applets.json"
     ATH_DATA_FILE = "ath.json" # Changed filename
     ATH_DUMP_FILE = "ath_dump.tmp" # Temporary file for raw API data
@@ -292,6 +293,42 @@ class Initializer:
             gc.collect()
 
 
+    async def _fetch_and_process_gold(self):
+        """Fetches gold price data and saves it to config.json via ConfigManager."""
+        print(f"[Initializer] Fetching gold price data...")
+        
+        await self._show_initializing_screen("Fetching Gold")
+        
+        try:
+            response_stream = urequests.urlopen(self.GOLD_API_URL)
+            gc.collect()
+            
+            response_body = response_stream.read()
+            response_stream.close()
+            gc.collect()
+            
+            try:
+                gold_data = json.loads(response_body)
+                if isinstance(gold_data, dict):
+                    # The API returns the price directly in the root object
+                    price = float(gold_data.get('price', 0))
+                    if price > 0:
+                        self.config_manager.set_gold_price(price)
+                        print(f"[Initializer] Successfully saved gold price ${price} to config.json")
+                    else:
+                        print("[Initializer] Invalid gold price value")
+                else:
+                    print("[Initializer] Invalid gold price data structure - expected dictionary")
+            except (ValueError, TypeError) as err:
+                print(f"[Initializer] Error parsing gold price data: {err}")
+                
+        except Exception as e:
+            print(f"[Initializer] Error fetching gold price: {e}")
+            await self._show_initializing_screen("Gold Price Error")
+            await asyncio.sleep(2)
+        
+        gc.collect()
+
     async def _fetch_and_process_fear_and_greed(self):
         """Fetch and store Fear and Greed Index data."""
         FNG_API_URL = "https://api.alternative.me/fng/"
@@ -354,6 +391,11 @@ class Initializer:
 
         # 3. Fetch and process Fear and Greed Index
         await self._fetch_and_process_fear_and_greed()
+        gc.collect()
+        await asyncio.sleep_ms(100) # Small delay
+
+        # 4. Fetch and process Gold price
+        await self._fetch_and_process_gold()
         gc.collect()
         await asyncio.sleep_ms(100) # Small delay
 
