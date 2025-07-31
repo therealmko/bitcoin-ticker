@@ -617,6 +617,8 @@ async function fetchApplets() {{
             availableContainer.innerHTML = '';
             activeContainer.innerHTML = '';
             
+            // First create all cards but don't append them yet
+            const cardMap = new Map();
             applets.forEach(applet => {{
                 const card = document.createElement('div');
                 card.className = 'applet-card';
@@ -633,10 +635,18 @@ async function fetchApplets() {{
                     card.classList.remove('dragging');
                 }});
                 
-                if (applet.enabled) {{
-                    activeContainer.appendChild(card);
-                }} else {{
-                    availableContainer.appendChild(card);
+                cardMap.set(applet.name, {{ card, enabled: applet.enabled }});
+            }});
+            
+            // Now append cards in the original order
+            applets.forEach(applet => {{
+                const cardInfo = cardMap.get(applet.name);
+                if (cardInfo) {{
+                    if (cardInfo.enabled) {{
+                        activeContainer.appendChild(cardInfo.card);
+                    }} else {{
+                        availableContainer.appendChild(cardInfo.card);
+                    }}
                 }}
             }});
             
