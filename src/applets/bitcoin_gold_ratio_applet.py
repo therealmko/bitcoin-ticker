@@ -95,7 +95,6 @@ class bitcoin_gold_ratio_applet(BaseApplet):
             # Get BTC price from nested data structure
             btc_price = float(bitcoin_data.get('lastPrice', 0))
 
-            # Get Gold price
             gold_price = float(gold_data.get('price', 0))
 
             if btc_price > 0 and gold_price > 0:
