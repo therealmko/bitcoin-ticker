@@ -142,8 +142,18 @@ class AsyncWebServer:
         _, body = self.parse_request_body(request_lines)
         try:
             request = json.loads(body)
+            # Ensure request is a list and has required fields
+            if not isinstance(request, list):
+                raise ValueError("Invalid request format - expected list")
+            
+            for item in request:
+                if not isinstance(item, dict) or 'name' not in item or 'enabled' not in item:
+                    raise ValueError("Invalid applet format - missing required fields")
+            
+            # Update applets with validated data
             self.applet_manager.update_applets(request)
             print("[AsyncWebServer] Updated applet selection:", request)
+            
             response = (
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/plain\r\n"
@@ -152,8 +162,12 @@ class AsyncWebServer:
             )
             writer.write(response.encode('utf-8'))
             await writer.drain()
+            await writer.wait_closed()
             
-            # Trigger device reboot after sending response
+            # Small delay before reboot to ensure response is sent
+            await asyncio.sleep(0.5)
+            
+            # Trigger device reboot after ensuring response is sent
             import machine
             machine.reset()
         except Exception as e:
@@ -670,16 +684,24 @@ function getClosestCard(container, mouseY) {{
 }}
 
 function saveAppletOrder() {{
-    const activeCards = [...document.getElementById('active-container').querySelectorAll('.applet-card')];
-    const allCards = [
-        ...document.getElementById('available-container').querySelectorAll('.applet-card'),
-        ...activeCards
-    ];
+    const activeContainer = document.getElementById('active-container');
+    const availableContainer = document.getElementById('available-container');
     
-    const applets = allCards.map(card => ({{
-        name: card.dataset.appletName,
-        enabled: activeCards.includes(card)
-    }}));
+    // Get cards in order from both containers
+    const activeCards = [...activeContainer.querySelectorAll('.applet-card')];
+    const availableCards = [...availableContainer.querySelectorAll('.applet-card')];
+    
+    // Create ordered list of all applets, preserving order in both containers
+    const applets = [
+        ...activeCards.map(card => ({{
+            name: card.dataset.appletName,
+            enabled: true
+        }})),
+        ...availableCards.map(card => ({{
+            name: card.dataset.appletName,
+            enabled: false
+        }}))
+    ];
     
     fetch(`http://${{serverIP}}/select_applets`, {{
         method: 'POST',
