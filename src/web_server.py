@@ -314,6 +314,58 @@ class AsyncWebServer:
         padding: 20px;
         }}
 
+        /* Drag and Drop styles */
+        .applet-columns {{
+            display: flex;
+            gap: 20px;
+            margin: 20px auto;
+            max-width: 800px;
+        }}
+
+        .applet-column {{
+            flex: 1;
+            min-height: 300px;
+            background: #333;
+            border-radius: 5px;
+            padding: 10px;
+        }}
+
+        .column-header {{
+            color: rgb(252, 98, 43);
+            text-align: center;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            font-weight: bold;
+        }}
+
+        .applet-card {{
+            background: #444;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            cursor: move;
+            transition: background 0.3s;
+            text-align: left;
+        }}
+
+        .applet-card:hover {{
+            background: #555;
+        }}
+
+        .applet-card.dragging {{
+            opacity: 0.5;
+        }}
+
+        @media (max-width: 600px) {{
+            .applet-columns {{
+                flex-direction: column;
+            }}
+            
+            .applet-column {{
+                min-height: 200px;
+            }}
+        }}
+
         h1,
         h2 {{
         color: rgb(252, 98, 43);
@@ -540,38 +592,110 @@ async function fetchNetworks() {{
 
 // Fetch and render applets
 async function fetchApplets() {{
-  try {{
-    const response = await fetch(`http://${{serverIP}}/applets`);
-    if (response.ok) {{
-      const applets = await response.json();
-      const form = document.getElementById('applet-container');
-      form.innerHTML = '';
-      applets.forEach(applet => {{
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.name = 'applets';
-        checkbox.value = applet.name;
-        checkbox.checked = applet.enabled;
-
-        const label = document.createElement('label');
-        label.textContent = applet.name;
-        label.appendChild(checkbox);
-
-        form.appendChild(label);
-        form.appendChild(document.createElement('br'));
-      }});
-      const submitButton = document.createElement('button');
-      submitButton.textContent = 'Save Applets';
-      submitButton.type = 'submit';
-      submitButton.style.marginTop = '10px';
-      form.appendChild(submitButton);
-
-    }} else {{
-      alert('Failed to fetch applets');
+    try {{
+        const response = await fetch(`http://${{serverIP}}/applets`);
+        if (response.ok) {{
+            const applets = await response.json();
+            const availableContainer = document.getElementById('available-container');
+            const activeContainer = document.getElementById('active-container');
+            
+            availableContainer.innerHTML = '';
+            activeContainer.innerHTML = '';
+            
+            applets.forEach(applet => {{
+                const card = document.createElement('div');
+                card.className = 'applet-card';
+                card.draggable = true;
+                card.textContent = applet.name;
+                card.dataset.appletName = applet.name;
+                
+                // Add drag event listeners
+                card.addEventListener('dragstart', () => {{
+                    card.classList.add('dragging');
+                }});
+                
+                card.addEventListener('dragend', () => {{
+                    card.classList.remove('dragging');
+                    saveAppletOrder();
+                }});
+                
+                if (applet.enabled) {{
+                    activeContainer.appendChild(card);
+                }} else {{
+                    availableContainer.appendChild(card);
+                }}
+            }});
+            
+            initDragAndDrop();
+        }} else {{
+            alert('Failed to fetch applets');
+        }}
+    }} catch (error) {{
+        console.error('Error fetching applets:', error);
     }}
-  }} catch (error) {{
-    console.error('Error fetching applets:', error);
-  }}
+}}
+
+function initDragAndDrop() {{
+    const columns = document.querySelectorAll('.applet-column');
+    
+    columns.forEach(column => {{
+        column.addEventListener('dragover', e => {{
+            e.preventDefault();
+            const draggingCard = document.querySelector('.dragging');
+            const container = column.querySelector('div[id$="-container"]');
+            const closestCard = getClosestCard(container, e.clientY);
+            
+            if (closestCard) {{
+                container.insertBefore(draggingCard, closestCard);
+            }} else {{
+                container.appendChild(draggingCard);
+            }}
+        }});
+    }});
+}}
+
+function getClosestCard(container, mouseY) {{
+    const cards = [...container.querySelectorAll('.applet-card:not(.dragging)')];
+    
+    return cards.reduce((closest, card) => {{
+        const box = card.getBoundingClientRect();
+        const offset = mouseY - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {{
+            return {{ offset: offset, element: card }};
+        }} else {{
+            return closest;
+        }}
+    }}, {{ offset: Number.NEGATIVE_INFINITY }}).element;
+}}
+
+function saveAppletOrder() {{
+    const activeCards = [...document.getElementById('active-container').querySelectorAll('.applet-card')];
+    const allCards = [
+        ...document.getElementById('available-container').querySelectorAll('.applet-card'),
+        ...activeCards
+    ];
+    
+    const applets = allCards.map(card => ({{
+        name: card.dataset.appletName,
+        enabled: activeCards.includes(card)
+    }}));
+    
+    fetch(`http://${{serverIP}}/select_applets`, {{
+        method: 'POST',
+        headers: {{'Content-Type': 'application/json'}},
+        body: JSON.stringify(applets)
+    }})
+    .then(response => {{
+        if (response.ok) {{
+            console.log('Applet order saved successfully');
+        }} else {{
+            alert('Failed to save applet order');
+        }}
+    }})
+    .catch(error => {{
+        console.error('Error saving applet order:', error);
+    }});
 }}
 
 // Fetch configuration
