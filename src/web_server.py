@@ -638,15 +638,19 @@ async function fetchApplets() {{
                 cardMap.set(applet.name, {{ card, enabled: applet.enabled }});
             }});
             
-            // Now append cards in the original order
+            // First append enabled applets in original order
             applets.forEach(applet => {{
                 const cardInfo = cardMap.get(applet.name);
-                if (cardInfo) {{
-                    if (cardInfo.enabled) {{
-                        activeContainer.appendChild(cardInfo.card);
-                    }} else {{
-                        availableContainer.appendChild(cardInfo.card);
-                    }}
+                if (cardInfo && applet.enabled) {{
+                    activeContainer.appendChild(cardInfo.card);
+                }}
+            }});
+
+            // Then append disabled applets in original order
+            applets.forEach(applet => {{
+                const cardInfo = cardMap.get(applet.name);
+                if (cardInfo && !applet.enabled) {{
+                    availableContainer.appendChild(cardInfo.card);
                 }}
             }});
             
