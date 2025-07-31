@@ -611,8 +611,15 @@ async function fetchApplets() {{
         const response = await fetch(`http://${{serverIP}}/applets`);
         if (response.ok) {{
             const applets = await response.json();
+            console.log('Fetched applets:', applets);  // Debug log
+            
             const availableContainer = document.getElementById('available-container');
             const activeContainer = document.getElementById('active-container');
+            
+            if (!availableContainer || !activeContainer) {{
+                console.error('Container elements not found');  // Debug log
+                return;
+            }}
             
             availableContainer.innerHTML = '';
             activeContainer.innerHTML = '';
@@ -641,8 +648,10 @@ async function fetchApplets() {{
             // First append enabled applets in original order
             applets.forEach(applet => {{
                 const cardInfo = cardMap.get(applet.name);
+                console.log('Processing applet:', applet.name, 'enabled:', applet.enabled, 'cardInfo:', cardInfo);  // Debug log
                 if (cardInfo && applet.enabled) {{
                     activeContainer.appendChild(cardInfo.card);
+                    console.log('Appended to active:', applet.name);  // Debug log
                 }}
             }});
 
@@ -651,6 +660,7 @@ async function fetchApplets() {{
                 const cardInfo = cardMap.get(applet.name);
                 if (cardInfo && !applet.enabled) {{
                     availableContainer.appendChild(cardInfo.card);
+                    console.log('Appended to available:', applet.name);  // Debug log
                 }}
             }});
             
