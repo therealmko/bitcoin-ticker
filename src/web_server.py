@@ -515,6 +515,7 @@ class AsyncWebServer:
             </div>
         </div>
     </div>
+    <button onclick="saveAppletOrder()" style="max-width: 400px; margin: 20px auto;">Save Applets</button>
     
     <h2>Configuration</h2>
     <form id="config-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
