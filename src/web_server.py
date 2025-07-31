@@ -731,6 +731,14 @@ function saveAppletOrder() {{
                     enabled: isEnabled
                 }};
             }});
+            
+            // Send the updated applets to the server
+            return fetch(`http://${{serverIP}}/select_applets`, {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify(applets)
+            }});
+        }})
     
     fetch(`http://${{serverIP}}/select_applets`, {{
         method: 'POST',
