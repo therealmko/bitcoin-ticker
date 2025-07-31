@@ -739,23 +739,17 @@ function saveAppletOrder() {{
                 body: JSON.stringify(applets)
             }});
         }})
-    
-    fetch(`http://${{serverIP}}/select_applets`, {{
-        method: 'POST',
-        headers: {{'Content-Type': 'application/json'}},
-        body: JSON.stringify(applets)
-    }})
-    .then(response => {{
-        if (response.ok) {{
-            alert('Applet selection saved successfully! Device will reboot to apply changes.');
-        }} else {{
-            alert('Failed to save applet order');
-        }}
-    }})
-    .catch(error => {{
-        console.error('Error saving applet order:', error);
-        alert('Error saving applet order');
-    }});
+        .then(response => {{
+            if (response.ok) {{
+                alert('Applet selection saved successfully! Device will reboot to apply changes.');
+            }} else {{
+                alert('Failed to save applet order');
+            }}
+        }})
+        .catch(error => {{
+            console.error('Error saving applet order:', error);
+            alert('Error saving applet order');
+        }});
 }}
 
 // Fetch configuration
