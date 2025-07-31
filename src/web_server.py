@@ -617,7 +617,6 @@ async function fetchApplets() {{
                 
                 card.addEventListener('dragend', () => {{
                     card.classList.remove('dragging');
-                    saveAppletOrder();
                 }});
                 
                 if (applet.enabled) {{
@@ -689,13 +688,14 @@ function saveAppletOrder() {{
     }})
     .then(response => {{
         if (response.ok) {{
-            console.log('Applet order saved successfully');
+            alert('Applet selection saved successfully! Device will reboot to apply changes.');
         }} else {{
             alert('Failed to save applet order');
         }}
     }})
     .catch(error => {{
         console.error('Error saving applet order:', error);
+        alert('Error saving applet order');
     }});
 }}
 
