@@ -448,11 +448,21 @@ class AsyncWebServer:
     </form>
 
     <h2>Applet Selection</h2>
-    <form id="applet-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
-        <div id="applet-container">
-        <!-- Applets will be dynamically rendered here -->
+    <div class="applet-columns">
+        <div class="applet-column" id="available">
+            <div class="column-header">Available Applets</div>
+            <div id="available-container">
+                <!-- Available applets will be populated here -->
+            </div>
         </div>
-    </form>
+        
+        <div class="applet-column" id="active">
+            <div class="column-header">Active Applets</div>
+            <div id="active-container">
+                <!-- Active applets will be populated here -->
+            </div>
+        </div>
+    </div>
     
     <h2>Configuration</h2>
     <form id="config-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
@@ -742,7 +752,6 @@ async function saveConfig(event) {{
 
 // Attach handlers
 document.getElementById('wifi-form').addEventListener('submit', addNetwork);
-document.getElementById('applet-form').addEventListener('submit', saveApplets);
 document.getElementById('config-form').addEventListener('submit', saveConfig);
 
 // Initial fetch
