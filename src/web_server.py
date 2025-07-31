@@ -685,23 +685,28 @@ function getClosestCard(container, mouseY) {{
 
 function saveAppletOrder() {{
     const activeContainer = document.getElementById('active-container');
-    const availableContainer = document.getElementById('available-container');
     
-    // Get cards in order from both containers
+    // Get active cards in their current order
     const activeCards = [...activeContainer.querySelectorAll('.applet-card')];
-    const availableCards = [...availableContainer.querySelectorAll('.applet-card')];
-    
-    // Create ordered list of all applets, preserving order in both containers
-    const applets = [
-        ...activeCards.map(card => ({{
-            name: card.dataset.appletName,
-            enabled: true
-        }})),
-        ...availableCards.map(card => ({{
-            name: card.dataset.appletName,
-            enabled: false
-        }}))
-    ];
+    const enabledApplets = activeCards.map(card => ({{
+        name: card.dataset.appletName,
+        enabled: true
+    }}));
+
+    // Get the original order of all applets
+    fetch(`http://${{serverIP}}/applets`)
+        .then(response => response.json())
+        .then(originalApplets => {{
+            // Create final array maintaining original order but updating enabled status
+            const applets = originalApplets.map(originalApplet => {{
+                const isEnabled = enabledApplets.some(
+                    enabledApplet => enabledApplet.name === originalApplet.name
+                );
+                return {{
+                    name: originalApplet.name,
+                    enabled: isEnabled
+                }};
+            }});
     
     fetch(`http://${{serverIP}}/select_applets`, {{
         method: 'POST',
