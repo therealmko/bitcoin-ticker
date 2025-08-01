@@ -376,8 +376,8 @@ class Initializer:
 
     async def _fetch_current_version(self):
         """Fetches current version from GitHub and stores it in config"""
-        print("[Initializer] Fetching current version...")
-        await self._show_initializing_screen("Fetching Version")
+        print("[Initializer] Fetching SR Ticker version...")
+        await self._show_initializing_screen("Fetching SR Ticker Version")
         
         try:
             response = urequests.urlopen("https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest")
