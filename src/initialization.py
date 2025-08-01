@@ -380,11 +380,44 @@ class Initializer:
         await self._show_initializing_screen("Fetching SR Ticker Version")
         
         try:
-            # Use urequests.urlopen() as that's the supported method
+            import socket
+            import ssl
+            
+            # Prepare the HTTP request with required headers
             url = "https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest"
-            response = urequests.urlopen(url)
-            response_body = response.read()
-            response.close()
+            request = (
+                f"GET /repos/satoshiradio/bitcoin-ticker/releases/latest HTTP/1.1\r\n"
+                f"Host: api.github.com\r\n"
+                f"User-Agent: SR-Ticker\r\n"
+                f"Accept: application/json\r\n"
+                f"\r\n"
+            )
+            
+            # Create socket and establish SSL connection
+            s = socket.socket()
+            addr = socket.getaddrinfo('api.github.com', 443)[0][-1]
+            s.connect(addr)
+            s = ssl.wrap_socket(s)
+            
+            # Send request
+            s.write(request.encode())
+            
+            # Read response
+            response = b''
+            while True:
+                data = s.read(1024)
+                if not data:
+                    break
+                response += data
+            
+            s.close()
+            
+            # Split headers and body
+            response_parts = response.split(b'\r\n\r\n', 1)
+            if len(response_parts) > 1:
+                response_body = response_parts[1]
+            else:
+                raise ValueError("Invalid response format")
             
             # Print raw response for debugging
             print(f"[Initializer] Raw GitHub response: {response_body}")
