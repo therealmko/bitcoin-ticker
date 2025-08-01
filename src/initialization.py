@@ -375,7 +375,12 @@ class Initializer:
         gc.collect()
 
     async def _fetch_current_version(self):
-        """Fetches current version from GitHub and stores it in config"""
+        """Fetches current version from GitHub and stores it in config if not present."""
+        current_version = self.config_manager.get_version()
+        if current_version and current_version != "unknown":
+            print(f"[Initializer] Version already set to {current_version}. Skipping fetch.")
+            return
+
         print("[Initializer] Fetching SR Ticker version...")
         await self._show_initializing_screen("Fetching SR Ticker Version")
         
@@ -402,13 +407,14 @@ class Initializer:
             # Send request
             s.write(request.encode())
             
-            # Read response
-            response = b''
+            # Read response efficiently
+            chunks = []
             while True:
                 data = s.read(1024)
                 if not data:
                     break
-                response += data
+                chunks.append(data)
+            response = b''.join(chunks)
             
             s.close()
             
