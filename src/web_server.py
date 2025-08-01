@@ -568,8 +568,16 @@ async function fetchNetworks() {{
 
         // Create a container for text and actions
         const textContainer = document.createElement('div');
-        textContainer.textContent = network.ssid;
         textContainer.style.flex = '1';
+        
+        // Add sequence number and SSID
+        const sequenceNumber = document.createElement('span');
+        sequenceNumber.textContent = `${{i + 1}}. `;
+        sequenceNumber.style.color = 'rgb(252, 98, 43)';  // Orange color to match theme
+        sequenceNumber.style.marginRight = '8px';
+        
+        textContainer.appendChild(sequenceNumber);
+        textContainer.appendChild(document.createTextNode(network.ssid));
 
         // Add buttons for actions
         const upButton = document.createElement('button');
