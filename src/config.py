@@ -20,7 +20,8 @@ class ConfigManager:
             "fear_and_greed_classification": None,
             "fear_and_greed_timestamp": None,
             "gold_price": None,         # Gold price per oz in USD
-            "gold_timestamp": None      # Timestamp when gold price was last updated
+            "gold_timestamp": None,     # Timestamp when gold price was last updated
+            "version": None            # Current version of the ticker software
         }
         self.load_config()
 
@@ -193,3 +194,18 @@ class ConfigManager:
         except (ValueError, TypeError):
             print("[ConfigManager] Invalid gold price data")
             return False
+
+    def get_version(self):
+        """Get the current version of the ticker software"""
+        return self.config.get("version", self.defaults["version"])
+
+    def set_version(self, version):
+        """
+        Store the current version of the ticker software
+        
+        :param version: Version string (e.g., "v1.2.3")
+        """
+        if isinstance(version, str):
+            self.config["version"] = version
+            self.save_config()
+            print(f"[ConfigManager] Updated version to: {version}")
