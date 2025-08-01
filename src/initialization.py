@@ -377,18 +377,34 @@ class Initializer:
     async def _fetch_current_version(self):
         """Fetches current version from GitHub and stores it in config"""
         print("[Initializer] Fetching current version...")
+        await self._show_initializing_screen("Fetching Version")
+        
         try:
             response = urequests.urlopen("https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest")
-            data = json.loads(response.read())
-            version = data.get('tag_name')
-            if version:
-                self.config_manager.set_version(version)
-                print(f"[Initializer] Current version: {version}")
+            response_body = response.read()
             response.close()
             gc.collect()
+            
+            try:
+                data = json.loads(response_body)
+                version = data.get('tag_name')
+                if version:
+                    self.config_manager.set_version(version)
+                    print(f"[Initializer] Current version: {version}")
+                else:
+                    print("[Initializer] No version tag found in response")
+                    self.config_manager.set_version("unknown")
+            except ValueError as e:
+                print(f"[Initializer] Error parsing version data: {e}")
+                self.config_manager.set_version("unknown")
+                
         except Exception as e:
             print(f"[Initializer] Error fetching version: {e}")
-            gc.collect()
+            self.config_manager.set_version("unknown")
+            await self._show_initializing_screen("Version Error")
+            await asyncio.sleep(2)
+        
+        gc.collect()
 
     async def run_initialization(self):
         """Runs all initialization steps."""
