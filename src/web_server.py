@@ -41,7 +41,6 @@ class AsyncWebServer:
             "GET /networks": self.handle_get_networks,
             "GET /applets": self.handle_get_applets,
             "GET /config": self.handle_get_config,
-            "GET /version": self.handle_get_version,  # New endpoint for version
             "GET /transitions": self.handle_get_transitions, # Route to get available transitions
             "POST /submit": self.handle_submit_network,
             "POST /move_up": self.handle_move_up,
@@ -81,17 +80,6 @@ class AsyncWebServer:
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
             "Connection: close\r\n\r\n" + response_body
-        )
-        writer.write(response.encode('utf-8'))
-        await writer.drain()
-
-    async def handle_get_version(self, request_lines, writer):
-        """Handle GET request for current version"""
-        version = self.config_manager.get_version() or "unknown"
-        response = (
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            "Connection: close\r\n\r\n" + version
         )
         writer.write(response.encode('utf-8'))
         await writer.drain()
