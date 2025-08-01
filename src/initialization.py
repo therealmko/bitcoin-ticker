@@ -380,11 +380,10 @@ class Initializer:
         await self._show_initializing_screen("Fetching SR Ticker Version")
         
         try:
-            # Add User-Agent to URL as GitHub requires it
-            response = urequests.urlopen(
-                "https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest?client=SR-Ticker-1.0"
-            )
-            response_body = response.read()
+            # Add User-Agent to URL and proper headers for GitHub API
+            url = "https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest"
+            response = urequests.urlopen(url)
+            response_body = response.read().decode('utf-8')  # Decode bytes to string
             response.close()
             gc.collect()
             
