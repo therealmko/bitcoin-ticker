@@ -380,9 +380,30 @@ class Initializer:
         await self._show_initializing_screen("Fetching SR Ticker Version")
         
         try:
-            # Add User-Agent in the URL since headers aren't supported
+            # Construct the request with required User-Agent header
             url = "https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest"
-            response = urequests.urlopen(url + "?client=SR-Ticker")
+            request = f"""GET {url} HTTP/1.1\r
+Host: api.github.com\r
+User-Agent: SR-Ticker\r
+Accept: application/json\r
+\r
+"""
+            import socket
+            _, _, host, path = url.split('/', 3)
+            addr = socket.getaddrinfo(host, 443)[0][-1]
+            s = socket.socket()
+            s.connect(addr)
+            
+            import ssl
+            s = ssl.wrap_socket(s)
+            s.write(str.encode(request))
+            
+            # Read the response
+            response_data = s.read()
+            s.close()
+            
+            # Split headers and body
+            response_body = response_data.split(b'\r\n\r\n')[1]
             response_body = response.read()
             response.close()
             
