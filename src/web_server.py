@@ -41,6 +41,7 @@ class AsyncWebServer:
             "GET /networks": self.handle_get_networks,
             "GET /applets": self.handle_get_applets,
             "GET /config": self.handle_get_config,
+            "GET /version": self.handle_get_version,  # New endpoint for version
             "GET /transitions": self.handle_get_transitions, # Route to get available transitions
             "POST /submit": self.handle_submit_network,
             "POST /move_up": self.handle_move_up,
@@ -80,6 +81,17 @@ class AsyncWebServer:
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
             "Connection: close\r\n\r\n" + response_body
+        )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
+
+    async def handle_get_version(self, request_lines, writer):
+        """Handle GET request for current version"""
+        version = self.config_manager.get_version() or "unknown"
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Connection: close\r\n\r\n" + version
         )
         writer.write(response.encode('utf-8'))
         await writer.drain()
@@ -317,6 +329,21 @@ class AsyncWebServer:
     <title>Satoshi Radio Ticker</title>
     <link rel="icon" type="image/png" href="https://pool.satoshiradio.nl/favicon-32x32.png">
     <style>
+        /* Update banner */
+        .update-banner {{
+            background-color: rgb(252, 98, 43);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            display: none;
+            margin-bottom: 20px;
+        }}
+        
+        .update-banner a {{
+            color: white;
+            text-decoration: underline;
+        }}
+
         /* General styles */
         body {{
         background-color: #000;
@@ -494,7 +521,10 @@ class AsyncWebServer:
     </head>
 
     <body>
-    <h1>Satoshi Radio Ticker</h1>
+    <div id="update-banner" class="update-banner">
+        A new version is available! <a href="https://github.com/satoshiradio/bitcoin-ticker/releases" target="_blank">Click here to download</a>
+    </div>
+    <h1>Satoshi Radio Ticker <span id="version-text" style="font-size: 14px; color: #ccc;"></span></h1>
     <h2>Saved Wi-Fi Networks</h2>
     <div id="networks-container">
         <ul id="networks-list">
@@ -943,10 +973,38 @@ async function saveConfig(event) {{
 document.getElementById('wifi-form').addEventListener('submit', addNetwork);
 document.getElementById('config-form').addEventListener('submit', saveConfig);
 
+// Version check
+async function checkForUpdates() {{
+    try {{
+        // Get current version
+        const versionResponse = await fetch(`http://${{serverIP}}/version`);
+        if (!versionResponse.ok) throw new Error('Failed to fetch current version');
+        const currentVersion = await versionResponse.text();
+        
+        // Display current version
+        document.getElementById('version-text').textContent = currentVersion;
+        
+        // Get latest version from GitHub
+        const githubResponse = await fetch('https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest');
+        if (!githubResponse.ok) throw new Error('Failed to fetch latest version');
+        const data = await githubResponse.json();
+        const latestVersion = data.tag_name;
+        
+        // Compare versions and show banner if update available
+        if (currentVersion && latestVersion && currentVersion !== latestVersion) {{
+            document.getElementById('update-banner').style.display = 'block';
+            console.log(`Update available: ${{currentVersion}} -> ${{latestVersion}}`);
+        }}
+    }} catch (error) {{
+        console.error('Error checking for updates:', error);
+    }}
+}}
+
 // Initial fetch
 fetchNetworks();
 fetchApplets();
 fetchTransitions(); // Fetch transitions first, then config sets the value
+checkForUpdates(); // Check for updates when page loads
     </script>
     </body>
 

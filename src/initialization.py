@@ -374,12 +374,33 @@ class Initializer:
 
         gc.collect()
 
+    async def _fetch_current_version(self):
+        """Fetches current version from GitHub and stores it in config"""
+        print("[Initializer] Fetching current version...")
+        try:
+            response = urequests.urlopen("https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest")
+            data = json.loads(response.read())
+            version = data.get('tag_name')
+            if version:
+                self.config_manager.set_version(version)
+                print(f"[Initializer] Current version: {version}")
+            response.close()
+            gc.collect()
+        except Exception as e:
+            print(f"[Initializer] Error fetching version: {e}")
+            gc.collect()
+
     async def run_initialization(self):
         """Runs all initialization steps."""
         print("[Initializer] Starting initialization process...")
         await self._show_initializing_screen("Initializing")
 
-        # 1. Ensure applets.json exists
+        # 1. Fetch current version
+        await self._fetch_current_version()
+        gc.collect()
+        await asyncio.sleep_ms(100)
+
+        # 2. Ensure applets.json exists
         self._ensure_applets_json()
         gc.collect()
         await asyncio.sleep_ms(100) # Small delay
