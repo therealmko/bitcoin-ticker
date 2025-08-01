@@ -404,8 +404,6 @@ Accept: application/json\r
             
             # Split headers and body
             response_body = response_data.split(b'\r\n\r\n')[1]
-            response_body = response.read()
-            response.close()
             
             # Print raw response for debugging
             print(f"[Initializer] Raw GitHub response: {response_body}")
