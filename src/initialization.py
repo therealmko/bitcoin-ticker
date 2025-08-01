@@ -380,10 +380,10 @@ class Initializer:
         await self._show_initializing_screen("Fetching SR Ticker Version")
         
         try:
-            # Use urequests with a timeout for faster response
+            # Use urequests.urlopen() as that's the supported method
             url = "https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest"
-            response = urequests.get(url, timeout=5)  # 5 second timeout
-            response_body = response.content
+            response = urequests.urlopen(url)
+            response_body = response.read()
             response.close()
             
             # Print raw response for debugging
