@@ -721,15 +721,17 @@ function saveAppletOrder() {{
     fetch(`http://${{serverIP}}/applets`)
         .then(response => response.json())
         .then(originalApplets => {{
-            // Create final array maintaining original order but updating enabled status
-            const applets = originalApplets.map(originalApplet => {{
-                const isEnabled = enabledApplets.some(
-                    enabledApplet => enabledApplet.name === originalApplet.name
-                );
-                return {{
-                    name: originalApplet.name,
-                    enabled: isEnabled
-                }};
+            // First add enabled applets in their current order
+            const applets = enabledApplets;
+            
+            // Then add disabled applets in their original order
+            originalApplets.forEach(originalApplet => {{
+                if (!enabledApplets.some(enabled => enabled.name === originalApplet.name)) {{
+                    applets.push({{
+                        name: originalApplet.name,
+                        enabled: false
+                    }});
+                }}
             }});
             
             // Send the updated applets to the server
