@@ -10,6 +10,7 @@ from applet_manager import AppletManager
 from system_applets import ap_applet
 from config import ConfigManager
 from initialization import Initializer # Import the new Initializer
+from service_container import ServiceContainer  # New import for the container
 
 RGBLED(6, 7, 8).set_rgb(0, 0, 0)
 
@@ -20,17 +21,39 @@ async def main() -> None:
     and starts the web server. It keeps an asynchronous loop alive to service
     other tasks such as applets and data retrieval.
     """
+    # Create service container
+    container = ServiceContainer()
+    
+    # Initialize and register all services
     config_manager = ConfigManager()
+    container.register('config_manager', config_manager)
+    
     screen_manager = ScreenManager(config_manager=config_manager)
+    container.register('screen_manager', screen_manager)
+    
     data_manager = DataManager()
+    container.register('data_manager', data_manager)
+    
     wifi_manager = WiFiManager()
+    container.register('wifi_manager', wifi_manager)
+    
+    # Create applet manager with dependencies from container
+    applet_manager_instance = AppletManager(
+        screen_manager=container.get('screen_manager'),
+        data_manager=container.get('data_manager'),
+        wifi_manager=container.get('wifi_manager'),
+        config_manager=container.get('config_manager')
+    )
+    container.register('applet_manager', applet_manager_instance)
+    
+    # Create initializer with dependencies from container
+    initializer = Initializer(
+        screen_manager=container.get('screen_manager'),
+        config_manager=container.get('config_manager'),
+        applet_manager=applet_manager_instance
+    )
 
-    # Pass the single config_manager instance
-    applet_manager_instance = AppletManager(screen_manager, data_manager, wifi_manager, config_manager)
-    # Create Initializer instance and pass applet_manager_instance to it
-    initializer = Initializer(screen_manager, config_manager, applet_manager_instance)
-
-    splash_applet = applet_manager.SplashApplet(screen_manager)
+    splash_applet = applet_manager.SplashApplet(container.get('screen_manager'))
     print("[Main] Starting splash applet.")
     await applet_manager_instance.run_applet_once(splash_applet)
 
@@ -60,11 +83,15 @@ async def main() -> None:
         # Optionally clear or set a specific IP when in AP mode
         config_manager.set_ip_address("AP Mode") # Or keep the last known IP / "N/A"
         wifi_manager.setup_ap()
-        ap_mode_applet = ap_applet.ApApplet(screen_manager, wifi_manager)
+        ap_mode_applet = ap_applet.ApApplet(container.get('screen_manager'), container.get('wifi_manager'))
         asyncio.create_task(applet_manager_instance._run_applet(ap_mode_applet, is_system_applet=True))
 
-    # Pass the single config_manager instance to the web server
-    web_server = AsyncWebServer(wifi_manager, applet_manager_instance, config_manager)
+    # Create web server with dependencies from container
+    web_server = AsyncWebServer(
+        wifi_manager=container.get('wifi_manager'),
+        applet_manager=container.get('applet_manager'),
+        config_manager=container.get('config_manager')
+    )
     asyncio.create_task(web_server.start_web_server())
 
     # Keep the main event loop alive
