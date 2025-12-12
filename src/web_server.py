@@ -514,7 +514,10 @@ class AsyncWebServer:
     </form>
 
     <h2>Applet Selection</h2>
-    <p style="font-size: 14px; color: #ccc; margin-top: -10px; margin-bottom: 20px;">Drag applets by keeping them pressed between columns to enable/disable them. Reorder active applets by pressing and dragging them up/down.</p>
+    <p style="font-size: 14px; color: #ccc; margin-top: -10px; margin-bottom: 20px;">
+        Drag applets by keeping them pressed between columns to enable/disable them.<br>
+        Reorder active applets by pressing and dragging them up/down.
+    </p>
     <div class="applet-columns">
         <div class="applet-column" id="available">
             <div class="column-header">Available Applets</div>
