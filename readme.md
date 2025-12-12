@@ -119,6 +119,7 @@ src/
 ├── wifi_manager.py                     # Network connection manager
 ├── transitions.py                      # Utility to help manage applet transition effects
 ├── initialization.py                   # Utility to help manage initial ticker setup and loading of big datasets
+├── service_container.py                # ServiceManager to create and manage service instances
 └── config.py                           # Utility to help manage configurations
 ```
 
