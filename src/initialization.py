@@ -374,97 +374,14 @@ class Initializer:
 
         gc.collect()
 
-    async def _fetch_current_version(self):
-        """Fetches current version from GitHub and stores it in config if not present."""
-        current_version = self.config_manager.get_version()
-        if current_version and current_version != "unknown":
-            print(f"[Initializer] Version already set to {current_version}. Skipping fetch.")
-            return
-
-        print("[Initializer] Fetching SR Ticker version...")
-        await self._show_initializing_screen("Fetching SR Ticker Version")
-        
-        try:
-            import socket
-            import ssl
-            
-            # Prepare the HTTP request with required headers
-            url = "https://api.github.com/repos/satoshiradio/bitcoin-ticker/releases/latest"
-            request = (
-                f"GET /repos/satoshiradio/bitcoin-ticker/releases/latest HTTP/1.1\r\n"
-                f"Host: api.github.com\r\n"
-                f"User-Agent: SR-Ticker\r\n"
-                f"Accept: application/json\r\n"
-                f"\r\n"
-            )
-            
-            # Create socket and establish SSL connection
-            s = socket.socket()
-            addr = socket.getaddrinfo('api.github.com', 443)[0][-1]
-            s.connect(addr)
-            s = ssl.wrap_socket(s)
-            
-            # Send request
-            s.write(request.encode())
-            
-            # Read response efficiently
-            chunks = []
-            while True:
-                data = s.read(1024)
-                if not data:
-                    break
-                chunks.append(data)
-            response = b''.join(chunks)
-            
-            s.close()
-            
-            # Split headers and body
-            response_parts = response.split(b'\r\n\r\n', 1)
-            if len(response_parts) > 1:
-                response_body = response_parts[1]
-            else:
-                raise ValueError("Invalid response format")
-            
-            # Print raw response for debugging
-            print(f"[Initializer] Raw GitHub response: {response_body}")
-            
-            # Ensure we have a proper string before parsing
-            if isinstance(response_body, bytes):
-                response_body = response_body.decode('utf-8')
-            gc.collect()
-            
-            try:
-                data = json.loads(response_body)
-                version = data.get('tag_name')
-                if version:
-                    self.config_manager.set_version(version)
-                    print(f"[Initializer] Current version: {version}")
-                else:
-                    print("[Initializer] No version tag found in response")
-                    self.config_manager.set_version("unknown")
-            except ValueError as e:
-                print(f"[Initializer] Error parsing version data: {e}")
-                self.config_manager.set_version("unknown")
-                
-        except Exception as e:
-            print(f"[Initializer] Error fetching version: {e}")
-            self.config_manager.set_version("unknown")
-            await self._show_initializing_screen("Version Error")
-            await asyncio.sleep(2)
-        
-        gc.collect()
+    # Version fetching removed as it doesn't work properly
 
     async def run_initialization(self):
         """Runs all initialization steps."""
         print("[Initializer] Starting initialization process...")
         await self._show_initializing_screen("Initializing")
 
-        # 1. Fetch current version
-        await self._fetch_current_version()
-        gc.collect()
-        await asyncio.sleep_ms(100)
-
-        # 2. Ensure applets.json exists
+        # 1. Ensure applets.json exists
         self._ensure_applets_json()
         gc.collect()
         await asyncio.sleep_ms(100) # Small delay
