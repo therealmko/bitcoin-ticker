@@ -297,7 +297,7 @@ class Initializer:
         """Fetches gold price data and saves it to config.json via ConfigManager."""
         print(f"[Initializer] Fetching gold price data...")
         
-        await self._show_initializing_screen("Fetching Gold")
+        await self._show_initializing_screen("Fetching gold price data...")
         
         try:
             response_stream = urequests.urlopen(self.GOLD_API_URL)
