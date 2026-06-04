@@ -78,13 +78,13 @@ class DataManager:
 
     def _get_hash(self, url: str) -> str:
         """
-        Generate a hash for the URL using MD5 (first 8 hex chars).
+        Generate a hash for the URL using SHA256 (first 8 hex chars).
         Uses uhashlib which is built into MicroPython on RP2040.
         :param url: The URL to hash.
         :return: A hash string (8 hex characters, ~4 billion unique values).
         """
         url_bytes = url.encode('utf-8')
-        h = uhashlib.md5(url_bytes)
+        h = uhashlib.sha256(url_bytes)
         return ubinascii.hexlify(h.digest()).decode('ascii')[:8]
 
     def _get_cache_file_path(self, url: str) -> str:
