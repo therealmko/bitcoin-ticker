@@ -36,7 +36,7 @@ def urlopen(url, data=None, method="GET"):
             context.verify_mode = tls.CERT_NONE
             s = context.wrap_socket(s, server_hostname=host)
 
-        s.write(b"%s /%s HTTP/1.0\r\nHost: %s\r\n" % (method.encode(), path.encode(), host.encode()))
+        s.write(b"%s /%s HTTP/1.0\r\nHost: %s\r\nUser-Agent: Mozilla/5.0 (Linux; ARM) MicroPython/1.0\r\n" % (method.encode(), path.encode(), host.encode()))
         
         if data:
             s.write(b"Content-Length: %d\r\n" % len(data))

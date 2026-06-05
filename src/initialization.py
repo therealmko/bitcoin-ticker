@@ -86,14 +86,13 @@ class Initializer:
 
         response = None
         try:
-            # WARNING: This reads the entire response into memory.
-            # If this causes MemoryError, a streaming approach is needed.
             print(f"[Initializer] Requesting data from {self.ATH_API_URL}")
             response_stream = urequests.urlopen(self.ATH_API_URL)
             gc.collect()
 
-            # --- Assume success if urlopen doesn't raise exception ---
-            # The stream directly contains the body for HTTPS in this environment
+            # --- Check HTTP status (our urlopen returns raw socket, skip headers) ---
+            # urlopen in our urllib_urequest.py already strips headers, so we
+            # validate response by content length after reading the body.
             body_stream = response_stream
             print("[Initializer] HTTPS request successful, proceeding to read body.")
 
@@ -108,7 +107,7 @@ class Initializer:
                             break
                         f.write(chunk)
                         gc.collect() # Aggressive GC during write
-                print(f"[Initializer] Saved response body to {self.ATH_DUMP_FILE}")
+                print(f"[Initializer] Saved response body to {self.ATH_DUMP_FILE} ({os.stat(self.ATH_DUMP_FILE)[6]} bytes)")
             except Exception as write_e:
                  print(f"[Initializer] Error writing response body: {write_e}")
                  await self._show_initializing_screen(f"ATH Write Err")
@@ -151,8 +150,13 @@ class Initializer:
                  print(f"[Initializer] Error reading {self.ATH_DUMP_FILE}: {read_e}")
                  buffer = "" # Ensure buffer is empty on error
 
-            # --- Now parse the complete buffer ---
-            if buffer:
+            # --- Validate response before parsing ---
+            if buffer and len(buffer) < 1000:
+                print(f"[Initializer] Response too small ({len(buffer)} bytes), likely an error. Not a valid CoinGecko response.")
+                print(f"[Initializer] First 200 chars: {buffer[:200]}")
+                buffer = None
+                gc.collect()
+            elif buffer:
                 # --- Try to find and parse "ath" object ---
                 start_key_ath = '"ath":{'
                 start_index_ath = buffer.find(start_key_ath)
