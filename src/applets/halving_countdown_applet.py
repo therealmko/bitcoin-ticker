@@ -10,7 +10,8 @@ class halving_countdown_applet(BaseApplet):
     def __init__(self, screen_manager, data_manager: DataManager):
         super().__init__('halving_countdown_applet', screen_manager)
         self.data_manager = data_manager
-        self.api_url = "https://mempool.space/api/blocks/tip/height"
+        # Share the same endpoint as block_height_applet to avoid duplicate fetches
+        self.api_url = "https://mempool.space/api/v1/blocks/tip/height"
         self.current_data = None # Store data fetched in update()
         self.register()
 
