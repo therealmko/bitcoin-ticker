@@ -5,7 +5,8 @@ import time
 class ConfigManager:
     """
     Manages configuration settings for the Bitcoin Ticker application.
-    Currently supports applet duration and timezone offset configuration.
+    Static configuration only — volatile data (F&G index, gold price) is stored
+    in separate cache files to reduce flash wear on RP2040.
     """
     
     def __init__(self):
@@ -16,11 +17,6 @@ class ConfigManager:
             "timezone_offset": 0,       # Default timezone offset (UTC)
             "transition_effect": "None", # Default transition effect
             "ip_address": "N/A",         # Default IP address
-            "fear_and_greed_index": None,
-            "fear_and_greed_classification": None,
-            "fear_and_greed_timestamp": None,
-            "gold_price": None,         # Gold price per oz in USD
-            "gold_timestamp": None,     # Timestamp when gold price was last updated
             "version": None            # Current version of the ticker software
         }
         self.load_config()
@@ -138,62 +134,21 @@ class ConfigManager:
             # Return the current valid value instead of saving an invalid one
             return self.get_transition_effect()
 
-    def get_fear_and_greed_index(self):
-        """Retrieve the stored Fear and Greed Index value."""
-        return {
-            "index": self.config.get("fear_and_greed_index", None),
-            "classification": self.config.get("fear_and_greed_classification", None),
-            "timestamp": self.config.get("fear_and_greed_timestamp", 0)
-        }
-
-    def set_fear_and_greed_index(self, index_value, classification):
-        """
-        Store Fear and Greed Index data.
-        
-        :param index_value: Numeric index (0-100)
-        :param classification: Text classification of the index
-        """
+    def load_cache_file(self, filename):
+        """Load data from a JSON cache file. Returns dict or None."""
         try:
-            index_value = int(index_value)
-            index_value = max(0, min(100, index_value))  # Clamp between 0-100
-            
-            self.config["fear_and_greed_index"] = index_value
-            self.config["fear_and_greed_classification"] = str(classification)
-            self.config["fear_and_greed_timestamp"] = int(time.time())
-            
-            self.save_config()
-            return True
-        except (ValueError, TypeError):
-            print("[ConfigManager] Invalid Fear and Greed Index data")
-            return False
+            with open(filename, "r") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return None
 
-    def get_gold_price(self):
-        """Retrieve the stored gold price data."""
-        return {
-            "price": self.config.get("gold_price", None),
-            "timestamp": self.config.get("gold_timestamp", 0)
-        }
-
-    def set_gold_price(self, price):
-        """
-        Store gold price data.
-        
-        :param price: Gold price per oz in USD
-        :return: True if successful, False otherwise
-        """
+    def save_cache_file(self, filename, data):
+        """Save data to a JSON cache file."""
         try:
-            price = float(price)
-            if price > 0:  # Validate that price is positive
-                self.config["gold_price"] = price
-                self.config["gold_timestamp"] = int(time.time())
-                self.save_config()
-                return True
-            else:
-                print("[ConfigManager] Invalid gold price: must be positive")
-                return False
-        except (ValueError, TypeError):
-            print("[ConfigManager] Invalid gold price data")
-            return False
+            with open(filename, "w") as f:
+                json.dump(data, f)
+        except OSError as e:
+            print(f"[ConfigManager] Error writing {filename}: {e}")
 
     def get_version(self):
         """Get the current version of the ticker software"""

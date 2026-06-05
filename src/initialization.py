@@ -3,6 +3,7 @@ import os
 import ujson as json
 import gc
 import uerrno
+import time
 # Use the project's request library
 try:
     import urllib_urequest as urequests
@@ -298,7 +299,8 @@ class Initializer:
 
 
     async def _fetch_and_process_gold(self):
-        """Fetches gold price data and saves it to config.json via ConfigManager."""
+        """Fetches gold price data and saves it to gold.json cache file."""
+        gold_file = "gold.json"
         print(f"[Initializer] Fetching gold price data...")
         
         await self._show_initializing_screen("Fetching gold price data...")
@@ -314,11 +316,13 @@ class Initializer:
             try:
                 gold_data = json.loads(response_body)
                 if isinstance(gold_data, dict):
-                    # The API returns the price directly in the root object
                     price = float(gold_data.get('price', 0))
                     if price > 0:
-                        self.config_manager.set_gold_price(price)
-                        print(f"[Initializer] Successfully saved gold price ${price} to config.json")
+                        self.config_manager.save_cache_file(gold_file, {
+                            "price": price,
+                            "timestamp": int(time.time())
+                        })
+                        print(f"[Initializer] Successfully saved gold price ${price} to {gold_file}")
                     else:
                         print("[Initializer] Invalid gold price value")
                 else:
@@ -334,8 +338,9 @@ class Initializer:
         gc.collect()
 
     async def _fetch_and_process_fear_and_greed(self):
-        """Fetch and store Fear and Greed Index data."""
+        """Fetch and store Fear and Greed Index data to fear_and_greed.json."""
         FNG_API_URL = "https://api.alternative.me/fng/"
+        fng_file = "fear_and_greed.json"
         
         print(f"[Initializer] Fetching Fear and Greed Index data...")
         await self._show_initializing_screen("Fetching F&G Index")
@@ -344,12 +349,10 @@ class Initializer:
             response_stream = urequests.urlopen(FNG_API_URL)
             gc.collect()
 
-            # Read the entire response
             response_body = response_stream.read()
             response_stream.close()
             gc.collect()
 
-            # Parse JSON
             try:
                 fng_data = json.loads(response_body)
                 if (fng_data and 
@@ -361,9 +364,12 @@ class Initializer:
                     index_value = int(first_entry.get('value', 0))
                     classification = first_entry.get('value_classification', 'N/A')
 
-                    # Use config_manager to store the value
-                    self.config_manager.set_fear_and_greed_index(index_value, classification)
-                    print(f"[Initializer] Successfully saved Fear and Greed Index to config.json")
+                    self.config_manager.save_cache_file(fng_file, {
+                        "index": index_value,
+                        "classification": classification,
+                        "timestamp": int(time.time())
+                    })
+                    print(f"[Initializer] Successfully saved Fear and Greed Index to {fng_file}")
 
                 else:
                     print("[Initializer] Invalid Fear and Greed Index data structure")

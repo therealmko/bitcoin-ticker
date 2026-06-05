@@ -21,6 +21,7 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         self.data_manager = data_manager
         self.btc_api_url = "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"
         self.gold_api_url = "https://api.gold-api.com/price/XAU"
+        self.gold_cache_file = "gold.json"
         self.current_price_data = None
         self.gold_price_data = None
         self.register()
@@ -35,14 +36,14 @@ class bitcoin_gold_ratio_applet(BaseApplet):
         super().stop()
 
     def _load_gold_data(self):
-        """Load gold price data from config manager."""
+        """Load gold price data from cache file."""
         if self.config_manager:
-            gold_data = self.config_manager.get_gold_price()
-            if gold_data["price"] is not None:
+            gold_data = self.config_manager.load_cache_file(self.gold_cache_file)
+            if gold_data and gold_data.get("price") is not None:
                 self.gold_price_data = {"price": gold_data["price"]}
-                print(f"[bitcoin_gold_ratio_applet] Loaded gold price from config: ${gold_data['price']}")
+                print(f"[bitcoin_gold_ratio_applet] Loaded gold price from cache: ${gold_data['price']}")
             else:
-                print("[bitcoin_gold_ratio_applet] No gold price found in config.")
+                print("[bitcoin_gold_ratio_applet] No gold price found in cache.")
                 self.gold_price_data = None
         else:
             print("[bitcoin_gold_ratio_applet] No config manager available.")
