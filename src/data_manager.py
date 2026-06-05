@@ -3,6 +3,8 @@ import urequests
 import time
 import json
 import os
+import uhashlib
+import ubinascii
 from pimoroni import RGBLED
 
 
@@ -76,13 +78,14 @@ class DataManager:
 
     def _get_hash(self, url: str) -> str:
         """
-        Generate a hash for the URL using CRC32.
+        Generate a hash for the URL using SHA256 (first 8 hex chars).
+        Uses uhashlib which is built into MicroPython on RP2040.
         :param url: The URL to hash.
-        :return: A hash as a string.
+        :return: A hash string (8 hex characters, ~4 billion unique values).
         """
-        # If possible, use a more robust function or a library like uhashlib
-        # For demonstration, we keep your approach
-        return str(sum(ord(c) for c in url) % 10000)
+        url_bytes = url.encode('utf-8')
+        h = uhashlib.sha256(url_bytes)
+        return ubinascii.hexlify(h.digest()).decode('ascii')[:8]
 
     def _get_cache_file_path(self, url: str) -> str:
         """
@@ -139,7 +142,7 @@ class DataManager:
         for attempt in range(self.retry_count):
             try:
                 self._set_led("getting_data")
-                response = urequests.get(url, timeout=self.timeout)
+                response = urequests.get(url, timeout=self.timeout, headers={"User-Agent": "Mozilla/5.0 (Linux; ARM) MicroPython/1.0"})
                 if response.status_code == 200:
                     data = response.json()
                     self._set_led("success")

@@ -3,6 +3,7 @@ import os
 import ujson as json
 import gc
 import uerrno
+import time
 # Use the project's request library
 try:
     import urllib_urequest as urequests
@@ -86,14 +87,13 @@ class Initializer:
 
         response = None
         try:
-            # WARNING: This reads the entire response into memory.
-            # If this causes MemoryError, a streaming approach is needed.
             print(f"[Initializer] Requesting data from {self.ATH_API_URL}")
             response_stream = urequests.urlopen(self.ATH_API_URL)
             gc.collect()
 
-            # --- Assume success if urlopen doesn't raise exception ---
-            # The stream directly contains the body for HTTPS in this environment
+            # --- Check HTTP status (our urlopen returns raw socket, skip headers) ---
+            # urlopen in our urllib_urequest.py already strips headers, so we
+            # validate response by content length after reading the body.
             body_stream = response_stream
             print("[Initializer] HTTPS request successful, proceeding to read body.")
 
@@ -108,7 +108,7 @@ class Initializer:
                             break
                         f.write(chunk)
                         gc.collect() # Aggressive GC during write
-                print(f"[Initializer] Saved response body to {self.ATH_DUMP_FILE}")
+                print(f"[Initializer] Saved response body to {self.ATH_DUMP_FILE} ({os.stat(self.ATH_DUMP_FILE)[6]} bytes)")
             except Exception as write_e:
                  print(f"[Initializer] Error writing response body: {write_e}")
                  await self._show_initializing_screen(f"ATH Write Err")
@@ -151,8 +151,13 @@ class Initializer:
                  print(f"[Initializer] Error reading {self.ATH_DUMP_FILE}: {read_e}")
                  buffer = "" # Ensure buffer is empty on error
 
-            # --- Now parse the complete buffer ---
-            if buffer:
+            # --- Validate response before parsing ---
+            if buffer and len(buffer) < 1000:
+                print(f"[Initializer] Response too small ({len(buffer)} bytes), likely an error. Not a valid CoinGecko response.")
+                print(f"[Initializer] First 200 chars: {buffer[:200]}")
+                buffer = None
+                gc.collect()
+            elif buffer:
                 # --- Try to find and parse "ath" object ---
                 start_key_ath = '"ath":{'
                 start_index_ath = buffer.find(start_key_ath)
@@ -294,10 +299,11 @@ class Initializer:
 
 
     async def _fetch_and_process_gold(self):
-        """Fetches gold price data and saves it to config.json via ConfigManager."""
+        """Fetches gold price data and saves it to gold.json cache file."""
+        gold_file = "gold.json"
         print(f"[Initializer] Fetching gold price data...")
         
-        await self._show_initializing_screen("Fetching Gold")
+        await self._show_initializing_screen("Fetching gold price data...")
         
         try:
             response_stream = urequests.urlopen(self.GOLD_API_URL)
@@ -310,11 +316,13 @@ class Initializer:
             try:
                 gold_data = json.loads(response_body)
                 if isinstance(gold_data, dict):
-                    # The API returns the price directly in the root object
                     price = float(gold_data.get('price', 0))
                     if price > 0:
-                        self.config_manager.set_gold_price(price)
-                        print(f"[Initializer] Successfully saved gold price ${price} to config.json")
+                        self.config_manager.save_cache_file(gold_file, {
+                            "price": price,
+                            "timestamp": int(time.time())
+                        })
+                        print(f"[Initializer] Successfully saved gold price ${price} to {gold_file}")
                     else:
                         print("[Initializer] Invalid gold price value")
                 else:
@@ -330,8 +338,9 @@ class Initializer:
         gc.collect()
 
     async def _fetch_and_process_fear_and_greed(self):
-        """Fetch and store Fear and Greed Index data."""
+        """Fetch and store Fear and Greed Index data to fear_and_greed.json."""
         FNG_API_URL = "https://api.alternative.me/fng/"
+        fng_file = "fear_and_greed.json"
         
         print(f"[Initializer] Fetching Fear and Greed Index data...")
         await self._show_initializing_screen("Fetching F&G Index")
@@ -340,12 +349,10 @@ class Initializer:
             response_stream = urequests.urlopen(FNG_API_URL)
             gc.collect()
 
-            # Read the entire response
             response_body = response_stream.read()
             response_stream.close()
             gc.collect()
 
-            # Parse JSON
             try:
                 fng_data = json.loads(response_body)
                 if (fng_data and 
@@ -357,9 +364,12 @@ class Initializer:
                     index_value = int(first_entry.get('value', 0))
                     classification = first_entry.get('value_classification', 'N/A')
 
-                    # Use config_manager to store the value
-                    self.config_manager.set_fear_and_greed_index(index_value, classification)
-                    print(f"[Initializer] Successfully saved Fear and Greed Index to config.json")
+                    self.config_manager.save_cache_file(fng_file, {
+                        "index": index_value,
+                        "classification": classification,
+                        "timestamp": int(time.time())
+                    })
+                    print(f"[Initializer] Successfully saved Fear and Greed Index to {fng_file}")
 
                 else:
                     print("[Initializer] Invalid Fear and Greed Index data structure")
@@ -373,6 +383,8 @@ class Initializer:
             await asyncio.sleep(2)
 
         gc.collect()
+
+    # Version fetching removed as it doesn't work properly
 
     async def run_initialization(self):
         """Runs all initialization steps."""

@@ -142,8 +142,18 @@ class AsyncWebServer:
         _, body = self.parse_request_body(request_lines)
         try:
             request = json.loads(body)
+            # Ensure request is a list and has required fields
+            if not isinstance(request, list):
+                raise ValueError("Invalid request format - expected list")
+            
+            for item in request:
+                if not isinstance(item, dict) or 'name' not in item or 'enabled' not in item:
+                    raise ValueError("Invalid applet format - missing required fields")
+            
+            # Update applets with validated data
             self.applet_manager.update_applets(request)
             print("[AsyncWebServer] Updated applet selection:", request)
+            
             response = (
                 "HTTP/1.1 200 OK\r\n"
                 "Content-Type: text/plain\r\n"
@@ -152,8 +162,12 @@ class AsyncWebServer:
             )
             writer.write(response.encode('utf-8'))
             await writer.drain()
+            await writer.wait_closed()
             
-            # Trigger device reboot after sending response
+            # Small delay before reboot to ensure response is sent
+            await asyncio.sleep(0.5)
+            
+            # Trigger device reboot after ensuring response is sent
             import machine
             machine.reset()
         except Exception as e:
@@ -314,6 +328,58 @@ class AsyncWebServer:
         padding: 20px;
         }}
 
+        /* Drag and Drop styles */
+        .applet-columns {{
+            display: flex;
+            gap: 20px;
+            margin: 20px auto;
+            max-width: 800px;
+        }}
+
+        .applet-column {{
+            flex: 1;
+            min-height: 300px;
+            background: #333;
+            border-radius: 5px;
+            padding: 10px;
+        }}
+
+        .column-header {{
+            color: rgb(252, 98, 43);
+            text-align: center;
+            padding: 10px;
+            border-bottom: 1px solid #444;
+            font-weight: bold;
+        }}
+
+        .applet-card {{
+            background: #444;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 3px;
+            cursor: move;
+            transition: background 0.3s;
+            text-align: left;
+        }}
+
+        .applet-card:hover {{
+            background: #555;
+        }}
+
+        .applet-card.dragging {{
+            opacity: 0.5;
+        }}
+
+        @media (max-width: 600px) {{
+            .applet-columns {{
+                flex-direction: column;
+            }}
+            
+            .applet-column {{
+                min-height: 200px;
+            }}
+        }}
+
         h1,
         h2 {{
         color: rgb(252, 98, 43);
@@ -448,11 +514,26 @@ class AsyncWebServer:
     </form>
 
     <h2>Applet Selection</h2>
-    <form id="applet-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
-        <div id="applet-container">
-        <!-- Applets will be dynamically rendered here -->
+    <p style="font-size: 14px; color: #ccc; margin-top: -10px; margin-bottom: 20px;">
+        Drag applets by keeping them pressed between columns to enable/disable them.<br>
+        Reorder active applets by pressing and dragging them up/down.
+    </p>
+    <div class="applet-columns">
+        <div class="applet-column" id="available">
+            <div class="column-header">Available Applets</div>
+            <div id="available-container">
+                <!-- Available applets will be populated here -->
+            </div>
         </div>
-    </form>
+        
+        <div class="applet-column" id="active">
+            <div class="column-header">Active Applets</div>
+            <div id="active-container">
+                <!-- Active applets will be populated here -->
+            </div>
+        </div>
+    </div>
+    <button onclick="saveAppletOrder()" style="max-width: 400px; margin: 20px auto;">Save Applets</button>
     
     <h2>Configuration</h2>
     <form id="config-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
@@ -491,8 +572,16 @@ async function fetchNetworks() {{
 
         // Create a container for text and actions
         const textContainer = document.createElement('div');
-        textContainer.textContent = network.ssid;
         textContainer.style.flex = '1';
+        
+        // Add sequence number and SSID
+        const sequenceNumber = document.createElement('span');
+        sequenceNumber.textContent = `${{i + 1}}. `;
+        sequenceNumber.style.color = 'rgb(252, 98, 43)';  // Orange color to match theme
+        sequenceNumber.style.marginRight = '8px';
+        
+        textContainer.appendChild(sequenceNumber);
+        textContainer.appendChild(document.createTextNode(network.ssid));
 
         // Add buttons for actions
         const upButton = document.createElement('button');
@@ -530,38 +619,151 @@ async function fetchNetworks() {{
 
 // Fetch and render applets
 async function fetchApplets() {{
-  try {{
-    const response = await fetch(`http://${{serverIP}}/applets`);
-    if (response.ok) {{
-      const applets = await response.json();
-      const form = document.getElementById('applet-container');
-      form.innerHTML = '';
-      applets.forEach(applet => {{
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
-        checkbox.name = 'applets';
-        checkbox.value = applet.name;
-        checkbox.checked = applet.enabled;
+    try {{
+        const response = await fetch(`http://${{serverIP}}/applets`);
+        if (response.ok) {{
+            const applets = await response.json();
+            console.log('Fetched applets:', applets);  // Debug log
+            
+            const availableContainer = document.getElementById('available-container');
+            const activeContainer = document.getElementById('active-container');
+            
+            if (!availableContainer || !activeContainer) {{
+                console.error('Container elements not found');  // Debug log
+                return;
+            }}
+            
+            availableContainer.innerHTML = '';
+            activeContainer.innerHTML = '';
+            
+            // First create all cards but don't append them yet
+            const cardMap = new Map();
+            applets.forEach(applet => {{
+                const card = document.createElement('div');
+                card.className = 'applet-card';
+                card.draggable = true;
+                card.textContent = applet.name;
+                card.dataset.appletName = applet.name;
+                
+                // Add drag event listeners
+                card.addEventListener('dragstart', () => {{
+                    card.classList.add('dragging');
+                }});
+                
+                card.addEventListener('dragend', () => {{
+                    card.classList.remove('dragging');
+                }});
+                
+                cardMap.set(applet.name, {{ card, enabled: applet.enabled }});
+            }});
+            
+            // First append enabled applets in original order
+            applets.forEach(applet => {{
+                const cardInfo = cardMap.get(applet.name);
+                console.log('Processing applet:', applet.name, 'enabled:', applet.enabled, 'cardInfo:', cardInfo);  // Debug log
+                if (cardInfo && applet.enabled) {{
+                    activeContainer.appendChild(cardInfo.card);
+                    console.log('Appended to active:', applet.name);  // Debug log
+                }}
+            }});
 
-        const label = document.createElement('label');
-        label.textContent = applet.name;
-        label.appendChild(checkbox);
-
-        form.appendChild(label);
-        form.appendChild(document.createElement('br'));
-      }});
-      const submitButton = document.createElement('button');
-      submitButton.textContent = 'Save Applets';
-      submitButton.type = 'submit';
-      submitButton.style.marginTop = '10px';
-      form.appendChild(submitButton);
-
-    }} else {{
-      alert('Failed to fetch applets');
+            // Then append disabled applets in original order
+            applets.forEach(applet => {{
+                const cardInfo = cardMap.get(applet.name);
+                if (cardInfo && !applet.enabled) {{
+                    availableContainer.appendChild(cardInfo.card);
+                    console.log('Appended to available:', applet.name);  // Debug log
+                }}
+            }});
+            
+            initDragAndDrop();
+        }} else {{
+            alert('Failed to fetch applets');
+        }}
+    }} catch (error) {{
+        console.error('Error fetching applets:', error);
     }}
-  }} catch (error) {{
-    console.error('Error fetching applets:', error);
-  }}
+}}
+
+function initDragAndDrop() {{
+    const columns = document.querySelectorAll('.applet-column');
+    
+    columns.forEach(column => {{
+        column.addEventListener('dragover', e => {{
+            e.preventDefault();
+            const draggingCard = document.querySelector('.dragging');
+            const container = column.querySelector('div[id$="-container"]');
+            const closestCard = getClosestCard(container, e.clientY);
+            
+            if (closestCard) {{
+                container.insertBefore(draggingCard, closestCard);
+            }} else {{
+                container.appendChild(draggingCard);
+            }}
+        }});
+    }});
+}}
+
+function getClosestCard(container, mouseY) {{
+    const cards = [...container.querySelectorAll('.applet-card:not(.dragging)')];
+    
+    return cards.reduce((closest, card) => {{
+        const box = card.getBoundingClientRect();
+        const offset = mouseY - box.top - box.height / 2;
+        
+        if (offset < 0 && offset > closest.offset) {{
+            return {{ offset: offset, element: card }};
+        }} else {{
+            return closest;
+        }}
+    }}, {{ offset: Number.NEGATIVE_INFINITY }}).element;
+}}
+
+function saveAppletOrder() {{
+    const activeContainer = document.getElementById('active-container');
+    
+    // Get active cards in their current order
+    const activeCards = [...activeContainer.querySelectorAll('.applet-card')];
+    const enabledApplets = activeCards.map(card => ({{
+        name: card.dataset.appletName,
+        enabled: true
+    }}));
+
+    // Get the original order of all applets
+    fetch(`http://${{serverIP}}/applets`)
+        .then(response => response.json())
+        .then(originalApplets => {{
+            // First add enabled applets in their current order
+            const applets = enabledApplets;
+            
+            // Then add disabled applets in their original order
+            originalApplets.forEach(originalApplet => {{
+                if (!enabledApplets.some(enabled => enabled.name === originalApplet.name)) {{
+                    applets.push({{
+                        name: originalApplet.name,
+                        enabled: false
+                    }});
+                }}
+            }});
+            
+            // Send the updated applets to the server
+            return fetch(`http://${{serverIP}}/select_applets`, {{
+                method: 'POST',
+                headers: {{'Content-Type': 'application/json'}},
+                body: JSON.stringify(applets)
+            }});
+        }})
+        .then(response => {{
+            if (response.ok) {{
+                alert('Applet selection saved successfully! Device will reboot to apply changes.');
+            }} else {{
+                alert('Failed to save applet order');
+            }}
+        }})
+        .catch(error => {{
+            console.error('Error saving applet order:', error);
+            alert('Error saving applet order');
+        }});
 }}
 
 // Fetch configuration
@@ -742,7 +944,6 @@ async function saveConfig(event) {{
 
 // Attach handlers
 document.getElementById('wifi-form').addEventListener('submit', addNetwork);
-document.getElementById('applet-form').addEventListener('submit', saveApplets);
 document.getElementById('config-form').addEventListener('submit', saveConfig);
 
 // Initial fetch
