@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Satoshi Radio Ticker</title>
+<link rel="icon" type="image/png" href="https://pool.satoshiradio.nl/favicon-32x32.png">
+<style>
+    /* General styles */
+    body {
+    background-color: #000;
+    color: #fff;
+    font-family: sans-serif;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0;
+    padding: 20px;
+    }
+
+    /* Drag and Drop styles */
+    .applet-columns {
+        display: flex;
+        gap: 20px;
+        margin: 20px auto;
+        max-width: 800px;
+    }
+
+    .applet-column {
+        flex: 1;
+        min-height: 300px;
+        background: #333;
+        border-radius: 5px;
+        padding: 10px;
+    }
+
+    .column-header {
+        color: rgb(252, 98, 43);
+        text-align: center;
+        padding: 10px;
+        border-bottom: 1px solid #444;
+        font-weight: bold;
+    }
+
+    .applet-card {
+        background: #444;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 3px;
+        cursor: move;
+        transition: background 0.3s;
+        text-align: left;
+    }
+
+    .applet-card:hover {
+        background: #555;
+    }
+
+    .applet-card.dragging {
+        opacity: 0.5;
+    }
+
+    @media (max-width: 600px) {
+        .applet-columns {
+            flex-direction: column;
+        }
+
+        .applet-column {
+            min-height: 200px;
+        }
+    }
+
+    h1,
+    h2 {
+    color: rgb(252, 98, 43);
+    }
+
+    ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    }
+
+    li {
+    margin: 10px 0;
+    padding: 10px;
+    background-color: #333;
+    border-radius: 5px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    }
+
+    /* Button styles */
+    button {
+    background-color: rgb(252, 98, 43);
+    border: none;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    }
+
+    button:hover {
+    background-color: #e95b33;
+    }
+
+    /* Input fields */
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    button {
+    width: 100%;
+    padding: 10px;
+    margin: 5px 0;
+    border: none;
+    border-radius: 5px;
+    box-sizing: border-box;
+    text-transform: none;
+    }
+
+    /* Container adjustments for mobile */
+    #networks-container {
+    margin: 0 auto;
+    max-width: 400px;
+    }
+
+    @media (max-width: 600px) {
+    body {
+        padding: 10px;
+    }
+
+    li {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: left;
+    }
+
+    button {
+        width: 100%;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"] {
+        width: 100%;
+    }
+    }
+
+    #applet-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    }
+
+    #applet-container label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px;
+    background-color: #333;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    }
+
+    #applet-container input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    }
+
+    @media (max-width: 600px) {
+    #applet-container label {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    }
+</style>
+</head>
+
+<body>
+<h1>Satoshi Radio Ticker</h1>
+<h2>Saved Wi-Fi Networks</h2>
+<div id="networks-container">
+    <ul id="networks-list">
+    <!-- Networks will be dynamically rendered here -->
+    </ul>
+</div>
+
+<h2>Add New Wi-Fi Network</h2>
+<form id="wifi-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
+    <label for="ssid" style="display: block; margin-bottom: 5px;">SSID:</label>
+    <input type="text" id="ssid" name="ssid" placeholder="Enter Wi-Fi SSID" required>
+
+    <label for="password" style="display: block; margin-top: 10px; margin-bottom: 5px;">Password:</label>
+    <input type="password" id="password" name="password" placeholder="Enter Wi-Fi Password" required>
+
+    <button type="submit" style="margin-top: 15px; width: 100%;">Add Network</button>
+</form>
+
+<h2>Applet Selection</h2>
+<p style="font-size: 14px; color: #ccc; margin-top: -10px; margin-bottom: 20px;">
+    Drag applets by keeping them pressed between columns to enable/disable them.<br>
+    Reorder active applets by pressing and dragging them up/down.
+</p>
+<div class="applet-columns">
+    <div class="applet-column" id="available">
+        <div class="column-header">Available Applets</div>
+        <div id="available-container">
+            <!-- Available applets will be populated here -->
+        </div>
+    </div>
+
+    <div class="applet-column" id="active">
+        <div class="column-header">Active Applets</div>
+        <div id="active-container">
+            <!-- Active applets will be populated here -->
+        </div>
+    </div>
+</div>
+<button onclick="saveAppletOrder()" style="max-width: 400px; margin: 20px auto;">Save Applets</button>
+
+<h2>Configuration</h2>
+<form id="config-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
+    <label for="applet-duration" style="display: block; margin-bottom: 5px;">Applet Duration (seconds):</label>
+    <input type="number" id="applet-duration" name="applet_duration" min="3" max="60" step="1" value="{{APPLET_DURATION}}" required>
+    <p style="font-size: 12px; color: #ccc;">Duration must be between 3 and 60 seconds</p>
+
+    <label for="transition-effect" style="display: block; margin-top: 15px; margin-bottom: 5px;">Applet Transition Effect:</label>
+    <select id="transition-effect" name="transition_effect" style="width: 100%; padding: 10px; margin: 5px 0; border: none; border-radius: 5px; box-sizing: border-box; background-color: #fff; color: #000;">
+        <!-- Options will be populated by JavaScript -->
+    </select>
+
+    <label for="timezone-offset" style="display: block; margin-top: 15px; margin-bottom: 5px;">Timezone Offset (hours from UTC):</label>
+    <input type="number" id="timezone-offset" name="timezone_offset" min="-12" max="14" step="1" value="{{TIMEZONE_OFFSET}}" required>
+    <p style="font-size: 12px; color: #ccc;">Valid values between -12 and +14</p>
+
+    <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
+</form>
+
+<button onclick="rebootDevice()" style="max-width: 400px; margin: 20px auto;">Reboot Device</button>
+
+<script>
+const serverIP = "{{SERVER_IP}}";
+
+// Fetch and render saved Wi-Fi networks
+async function fetchNetworks() {
+  try {
+    const response = await fetch(`http://${serverIP}/networks`);
+    if (response.ok) {
+      const networks = await response.json();
+      const networksList = document.getElementById('networks-list');
+      networksList.innerHTML = ''; // Clear existing list
+
+      networks.forEach((network, i) => {
+        const li = document.createElement('li');
+
+        // Create a container for text and actions
+        const textContainer = document.createElement('div');
+        textContainer.style.flex = '1';
+
+        // Add sequence number and SSID
+        const sequenceNumber = document.createElement('span');
+        sequenceNumber.textContent = `${i + 1}. `;
+        sequenceNumber.style.color = 'rgb(252, 98, 43)';  // Orange color to match theme
+        sequenceNumber.style.marginRight = '8px';
+
+        textContainer.appendChild(sequenceNumber);
+        textContainer.appendChild(document.createTextNode(network.ssid));
+
+        // Add buttons for actions
+        const upButton = document.createElement('button');
+        upButton.textContent = '↑';
+        upButton.onclick = () => moveNetwork('up', i);
+
+        const downButton = document.createElement('button');
+        downButton.textContent = '↓';
+        downButton.onclick = () => moveNetwork('down', i);
+
+        const removeButton = document.createElement('button');
+        removeButton.textContent = '✖';
+        removeButton.onclick = () => removeNetwork(i);
+
+        // Append text and buttons to the list item
+        li.appendChild(textContainer);
+
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '10px';
+        buttonContainer.appendChild(upButton);
+        buttonContainer.appendChild(downButton);
+        buttonContainer.appendChild(removeButton);
+
+        li.appendChild(buttonContainer);
+        networksList.appendChild(li);
+      });
+    } else {
+      alert('Failed to fetch networks');
+    }
+  } catch (error) {
+    console.error('Error fetching networks:', error);
+  }
+}
+
+// Fetch and render applets
+async function fetchApplets() {
+    try {
+        const response = await fetch(`http://${serverIP}/applets`);
+        if (response.ok) {
+            const applets = await response.json();
+            console.log('Fetched applets:', applets);
+
+            const availableContainer = document.getElementById('available-container');
+            const activeContainer = document.getElementById('active-container');
+
+            if (!availableContainer || !activeContainer) {
+                console.error('Container elements not found');
+                return;
+            }
+
+            availableContainer.innerHTML = '';
+            activeContainer.innerHTML = '';
+
+            // First create all cards but don't append them yet
+            const cardMap = new Map();
+            applets.forEach(applet => {
+                const card = document.createElement('div');
+                card.className = 'applet-card';
+                card.draggable = true;
+                card.textContent = applet.name;
+                card.dataset.appletName = applet.name;
+
+                // Add drag event listeners
+                card.addEventListener('dragstart', () => {
+                    card.classList.add('dragging');
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove('dragging');
+                });
+
+                cardMap.set(applet.name, { card, enabled: applet.enabled });
+            });
+
+            // First append enabled applets in original order
+            applets.forEach(applet => {
+                const cardInfo = cardMap.get(applet.name);
+                console.log('Processing applet:', applet.name, 'enabled:', applet.enabled, 'cardInfo:', cardInfo);
+                if (cardInfo && applet.enabled) {
+                    activeContainer.appendChild(cardInfo.card);
+                    console.log('Appended to active:', applet.name);
+                }
+            });
+
+            // Then append disabled applets in original order
+            applets.forEach(applet => {
+                const cardInfo = cardMap.get(applet.name);
+                if (cardInfo && !applet.enabled) {
+                    availableContainer.appendChild(cardInfo.card);
+                    console.log('Appended to available:', applet.name);
+                }
+            });
+
+            initDragAndDrop();
+        } else {
+            alert('Failed to fetch applets');
+        }
+    } catch (error) {
+        console.error('Error fetching applets:', error);
+    }
+}
+
+function initDragAndDrop() {
+    const columns = document.querySelectorAll('.applet-column');
+
+    columns.forEach(column => {
+        column.addEventListener('dragover', e => {
+            e.preventDefault();
+            const draggingCard = document.querySelector('.dragging');
+            const container = column.querySelector('div[id$="-container"]');
+            const closestCard = getClosestCard(container, e.clientY);
+
+            if (closestCard) {
+                container.insertBefore(draggingCard, closestCard);
+            } else {
+                container.appendChild(draggingCard);
+            }
+        });
+    });
+}
+
+function getClosestCard(container, mouseY) {
+    const cards = [...container.querySelectorAll('.applet-card:not(.dragging)')];
+
+    return cards.reduce((closest, card) => {
+        const box = card.getBoundingClientRect();
+        const offset = mouseY - box.top - box.height / 2;
+
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: card };
+        } else {
+            return closest;
+        }
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
+
+function saveAppletOrder() {
+    const activeContainer = document.getElementById('active-container');
+
+    // Get active cards in their current order
+    const activeCards = [...activeContainer.querySelectorAll('.applet-card')];
+    const enabledApplets = activeCards.map(card => ({
+        name: card.dataset.appletName,
+        enabled: true
+    }));
+
+    // Get the original order of all applets
+    fetch(`http://${serverIP}/applets`)
+        .then(response => response.json())
+        .then(originalApplets => {
+            // First add enabled applets in their current order
+            const applets = enabledApplets;
+
+            // Then add disabled applets in their original order
+            originalApplets.forEach(originalApplet => {
+                if (!enabledApplets.some(enabled => enabled.name === originalApplet.name)) {
+                    applets.push({
+                        name: originalApplet.name,
+                        enabled: false
+                    });
+                }
+            });
+
+            // Send the updated applets to the server
+            return fetch(`http://${serverIP}/select_applets`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(applets)
+            });
+        })
+        .then(response => {
+            if (response.ok) {
+                alert('Applet selection saved successfully! Device will reboot to apply changes.');
+            } else {
+                alert('Failed to save applet order');
+            }
+        })
+        .catch(error => {
+            console.error('Error saving applet order:', error);
+            alert('Error saving applet order');
+        });
+}
+
+// Fetch configuration
+async function fetchConfig() {
+  try {
+    const response = await fetch(`http://${serverIP}/config`);
+    if (response.ok) {
+      const config = await response.json();
+      document.getElementById('applet-duration').value = config.applet_duration;
+      document.getElementById('timezone-offset').value = config.timezone_offset;
+      // Set the selected transition effect in the dropdown
+      const transitionSelect = document.getElementById('transition-effect');
+      if (transitionSelect) {
+          transitionSelect.value = config.transition_effect;
+      }
+    } else {
+      alert('Failed to fetch configuration');
+    }
+  } catch (error) {
+    console.error('Error fetching configuration:', error);
+  }
+}
+
+// Fetch available transitions and populate dropdown
+async function fetchTransitions() {
+  try {
+    const response = await fetch(`http://${serverIP}/transitions`);
+    if (response.ok) {
+      const transitions = await response.json();
+      const selectElement = document.getElementById('transition-effect');
+      selectElement.innerHTML = ''; // Clear existing options
+      transitions.forEach(effect => {
+        const option = document.createElement('option');
+        option.value = effect;
+        option.textContent = effect;
+        selectElement.appendChild(option);
+      });
+      // After populating, fetch the current config to set the selected value
+      fetchConfig();
+    } else {
+      alert('Failed to fetch transition options');
+    }
+  } catch (error) {
+    console.error('Error fetching transitions:', error);
+  }
+}
+
+// Move a network up or down
+async function moveNetwork(direction, index) {
+  try {
+    const response = await fetch(`http://${serverIP}/move_${direction}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({index}),
+    });
+    if (response.ok) {
+      fetchNetworks();
+    } else {
+      alert('Failed to move network');
+    }
+  } catch (error) {
+    console.error(`Error moving network ${direction}:`, error);
+  }
+}
+
+async function rebootDevice() {
+    try {
+        const response = await fetch(`http://${serverIP}/reboot`, {
+            method: 'POST',
+        });
+        if (response.ok) {
+            alert('Rebooting device...');
+        } else {
+            alert('Failed to reboot device');
+        }
+    } catch (error) {
+        console.error('Error rebooting device:', error);
+    }
+}
+async function addNetwork(event) {
+  event.preventDefault();
+  const form = document.getElementById('wifi-form');
+  const data = Object.fromEntries(new FormData(form));
+
+  try {
+    const response = await fetch(`http://${serverIP}/submit`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+    if (response.ok) {
+      alert('Network added successfully!');
+      form.reset();
+      fetchNetworks();
+    } else {
+      alert('Failed to add network');
+    }
+  } catch (error) {
+    console.error('Error adding network:', error);
+  }
+}
+
+// Remove a network
+async function removeNetwork(index) {
+  try {
+    const response = await fetch(`http://${serverIP}/remove`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({index}),
+    });
+    if (response.ok) {
+      fetchNetworks();
+    } else {
+      alert('Failed to remove network');
+    }
+  } catch (error) {
+    console.error('Error removing network:', error);
+  }
+}
+
+// Save applet selections
+async function saveApplets(event) {
+  event.preventDefault();
+  const checkboxes = Array.from(document.querySelectorAll('#applet-form input[type="checkbox"]'));
+  const applets = checkboxes.map(checkbox => ({
+    name: checkbox.value,
+    enabled: checkbox.checked,
+  }));
+
+  try {
+    const response = await fetch(`http://${serverIP}/select_applets`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(applets),
+    });
+    if (response.ok) {
+      alert('Applet selection saved successfully! Device will reboot in a few seconds to apply changes.');
+    } else {
+      alert('Failed to save applet selection');
+    }
+  } catch (error) {
+    console.error('Error saving applet selection:', error);
+  }
+}
+
+// Save configuration
+async function saveConfig(event) {
+  event.preventDefault();
+  const form = document.getElementById('config-form');
+  const formData = new FormData(form);
+  const data = {
+    applet_duration: parseInt(formData.get('applet_duration'), 10),
+    timezone_offset: parseInt(formData.get('timezone_offset'), 10),
+    transition_effect: formData.get('transition_effect')
+  };
+
+  try {
+    const response = await fetch(`http://${serverIP}/update_config`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      // Update fields with actual values (in case they were adjusted/validated)
+      document.getElementById('applet-duration').value = result.applet_duration;
+      document.getElementById('timezone-offset').value = result.timezone_offset;
+      document.getElementById('transition-effect').value = result.transition_effect;
+      alert('Configuration saved successfully!');
+    } else {
+      alert('Failed to save configuration');
+    }
+  } catch (error) {
+    console.error('Error saving configuration:', error);
+  }
+}
+
+// Attach handlers
+document.getElementById('wifi-form').addEventListener('submit', addNetwork);
+document.getElementById('config-form').addEventListener('submit', saveConfig);
+
+// Initial fetch
+fetchNetworks();
+fetchApplets();
+fetchTransitions();
+</script>
+</body>
+</html>
