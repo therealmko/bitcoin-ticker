@@ -142,7 +142,7 @@ class DataManager:
         for attempt in range(self.retry_count):
             try:
                 self._set_led("getting_data")
-                response = urequests.get(url, timeout=self.timeout)
+                response = urequests.get(url, timeout=self.timeout, headers={"User-Agent": "Mozilla/5.0 (Linux; ARM) MicroPython/1.0"})
                 if response.status_code == 200:
                     data = response.json()
                     self._set_led("success")
