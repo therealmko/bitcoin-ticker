@@ -21,6 +21,7 @@ class fear_and_greed_applet(BaseApplet):
     def __init__(self, screen_manager: ScreenManager, data_manager: DataManager, config_manager=None):
         super().__init__('fear_and_greed_applet', screen_manager, config_manager)
         self.data_manager = data_manager
+        self.fng_cache_file = "fear_and_greed.json"
         self.current_data = None
         self.register()
 
@@ -35,10 +36,10 @@ class fear_and_greed_applet(BaseApplet):
         super().stop()
 
     async def update(self):
-        # Try to load from config_manager first
+        # Try to load from cache file first
         if self.config_manager:
-            fng_data = self.config_manager.get_fear_and_greed_index()
-            if fng_data['index'] is not None:
+            fng_data = self.config_manager.load_cache_file(self.fng_cache_file)
+            if fng_data and fng_data.get('index') is not None:
                 self.current_data = {
                     'data': {
                         'data': [{
@@ -49,7 +50,7 @@ class fear_and_greed_applet(BaseApplet):
                 }
                 return
 
-        # Fallback to data manager if no config data
+        # Fallback to data manager if no cache data
         self.current_data = self.data_manager.get_cached_data(self.API_URL)
         gc.collect()
 
