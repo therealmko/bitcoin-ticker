@@ -109,5 +109,4 @@ class bitcoin_applet(BaseApplet):
             print(f"[bitcoin_applet] Unexpected data type: {type(self.current_data)}")
 
         # screen_manager.update() is called by AppletManager or transition
-        # self.drawn flag removed
         gc.collect()

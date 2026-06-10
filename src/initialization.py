@@ -272,7 +272,6 @@ class Initializer:
                 await self._show_initializing_screen("ATH Parse Fail")
                 await asyncio.sleep(2)
 
-        # Removed specific urequests.HTTPError catch, rely on status code check and generic Exception
         except MemoryError:
             print("[Initializer] MemoryError during ATH fetch/process. Pico may not have enough RAM.")
             await self._show_initializing_screen("ATH Mem Error")
@@ -384,7 +383,6 @@ class Initializer:
 
         gc.collect()
 
-    # Version fetching removed as it doesn't work properly
 
     async def run_initialization(self):
         """Runs all initialization steps."""
