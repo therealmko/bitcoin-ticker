@@ -46,12 +46,11 @@ class moscow_time_applet(BaseApplet):
 
         # Draw timestamp from local RTC (NTP-synced)
         try:
-            t = time.localtime()
-            timestamp_str = f"{t[2]:02d}-{t[1]:02d}-{t[0]} {t[3]:02d}:{t[4]:02d}:{t[5]:02d}"
+            timestamp = int(time.time())
         except Exception as e:
-            timestamp_str = None
+            timestamp = None
             print(f"[moscow_time_applet] Failed to get local time: {e}")
-        self.screen_manager.draw_footer(timestamp_str)
+        self.screen_manager.draw_footer(timestamp)
 
         # Access the nested 'data' dictionary which holds the actual API response
         bitcoin_data = self.current_data.get('data', {})
