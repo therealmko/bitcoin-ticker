@@ -117,6 +117,7 @@ src/
 ├── urllib_urequest.py                  # HTTP client
 ├── web_server.py                       # Configuration web interface
 ├── wifi_manager.py                     # Network connection manager
+├── wifi_monitor.py                     # Automatic Network WiFi monitor and fix / notify tool 
 ├── transitions.py                      # Utility to help manage applet transition effects
 ├── initialization.py                   # Utility to help manage initial ticker setup and loading of big datasets
 ├── service_container.py                # ServiceManager to create and manage service instances

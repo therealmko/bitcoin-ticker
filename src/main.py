@@ -5,6 +5,7 @@ from pimoroni import RGBLED
 from screen_manager import ScreenManager
 from data_manager import DataManager
 from wifi_manager import WiFiManager
+from wifi_monitor import WiFiMonitor
 from web_server import AsyncWebServer
 from applet_manager import AppletManager
 from system_applets import ap_applet
@@ -74,6 +75,11 @@ async def main() -> None:
         else:
              print("[Main] WLAN disconnected unexpectedly after connect attempt.")
         config_manager.set_ip_address(ip_address)
+
+        # Start WiFi monitor to handle connection drops
+        wifi_monitor = WiFiMonitor(wifi_manager=wifi_manager)
+        container.register('wifi_monitor', wifi_monitor)
+        asyncio.create_task(wifi_monitor.run())
 
         # Start the main applet loop *after* initialization
         asyncio.create_task(applet_manager_instance.start_applets())
