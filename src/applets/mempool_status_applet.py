@@ -11,7 +11,6 @@ class mempool_status_applet(BaseApplet):
         self.data_manager = data_manager
         self.api_url = "https://mempool.space/api/mempool"
         self.current_data = None # Store data fetched in update()
-        # self.previous_vsize removed
         self.register()
 
     def start(self):
@@ -77,7 +76,6 @@ class mempool_status_applet(BaseApplet):
             # Restore original position
             self.screen_manager.draw_centered_text(size_str, scale=6, y_offset=0)
 
-            # --- Removed Change Indicator ---
 
             # --- Draw Transaction Count ---
             # Restore original position
@@ -88,5 +86,4 @@ class mempool_status_applet(BaseApplet):
             self.screen_manager.draw_centered_text("Data Error")
 
         # screen_manager.update() is called by AppletManager or transition
-        # self.drawn flag removed
         gc.collect()

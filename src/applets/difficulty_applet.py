@@ -137,5 +137,4 @@ class difficulty_applet(BaseApplet):
         y += 26
 
         # screen_manager.update() is called by AppletManager or transition
-        # self.drawn flag removed
         gc.collect()

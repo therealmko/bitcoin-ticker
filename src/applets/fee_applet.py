@@ -69,4 +69,3 @@ class fee_applet(BaseApplet):
             y += 40 # Move to next line
 
         # screen_manager.update() is called by AppletManager or transition
-        # self.drawn flag removed
