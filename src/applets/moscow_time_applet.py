@@ -2,6 +2,7 @@ from system_applets.base_applet import BaseApplet
 from data_manager import DataManager
 from micropython import const
 import gc
+import time
 
 class moscow_time_applet(BaseApplet):
     TTL = const(120)
@@ -43,8 +44,13 @@ class moscow_time_applet(BaseApplet):
             gc.collect()
             return
 
-        # Draw timestamp from the outer cache dictionary
-        self.screen_manager.draw_footer(self.current_data.get('timestamp', None))
+        # Draw timestamp from local RTC (NTP-synced)
+        try:
+            timestamp = int(time.time())
+        except Exception as e:
+            timestamp = None
+            print(f"[moscow_time_applet] Failed to get local time: {e}")
+        self.screen_manager.draw_footer(timestamp)
 
         # Access the nested 'data' dictionary which holds the actual API response
         bitcoin_data = self.current_data.get('data', {})
