@@ -100,18 +100,22 @@ class AppletManager:
              print("[AppletManager] Value Error parsing applets.json in get_applets_list.")
              # saved_data remains []
 
-        # Default all known applets to disabled
-        default_data = [{"name": name, "enabled": False} for name in self.all_applets.keys()]
+        # Build ordered list from saved data, preserving user-defined order
+        ordered_data = []
+        saved_names_seen = set()
+        for entry in saved_data:
+            if isinstance(entry, dict) and 'name' in entry:
+                ordered_data.append({
+                    "name": entry["name"],
+                    "enabled": entry.get("enabled", False)
+                })
+                saved_names_seen.add(entry["name"])
+        # Append any new applets not yet in saved data (at the end)
+        for name in self.all_applets.keys():
+            if name not in saved_names_seen:
+                ordered_data.append({"name": name, "enabled": False})
 
-        # Build a lookup from the saved file
-        applet_map = {entry["name"]: entry.get("enabled", False) for entry in saved_data}
-
-        # Merge saved state into the full list
-        for entry in default_data:
-            name = entry["name"]
-            entry["enabled"] = applet_map.get(name, False)
-
-        return default_data # Return the merged list
+        return ordered_data
 
 
     def load_applets(self, filename="applets.json"):
