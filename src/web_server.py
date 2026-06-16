@@ -2,6 +2,9 @@ from applet_manager import AppletManager
 import applet_manager
 import uasyncio as asyncio
 import json
+import machine
+import gc
+import time
 import wifi_manager  # Your custom WiFiManager module
 from config import ConfigManager  # Added import for ConfigManager
 
@@ -30,6 +33,7 @@ class AsyncWebServer:
         self.applet_manager = applet_manager
         self.config_manager = config_manager # Use the passed instance
         self.ip_address = self.wifi_manager.ip
+        self._boot_ticks = time.ticks_ms()
 
         # Remove instantiation here, use the passed instance
         # self.config_manager = ConfigManager()
@@ -49,9 +53,18 @@ class AsyncWebServer:
             "POST /select_applets": self.handle_select_applets,
             "POST /update_config": self.handle_update_config,  # New route to update config
             "POST /reboot": self.handle_reboot,
+            "GET /health": self.handle_health,
+        }
+        # Routes that don't require auth (unauthenticated access)
+        self._public_routes = {
+            "GET /",
+            "POST /submit",  # AP setup needs to add networks without auth
+            "GET /config",  # Settings page needs to read current config
+            "POST /update_config",  # Settings page needs to save config (including API key removal)
         }
         
     async def handle_root(self, request_lines, writer):
+        gc.collect()
         html = self.web_page()
         response = (
             "HTTP/1.1 200 OK\r\n"
@@ -102,7 +115,8 @@ class AsyncWebServer:
         config = {
             "applet_duration": self.config_manager.get_applet_duration(),
             "timezone_offset": self.config_manager.get_timezone_offset(),
-            "transition_effect": self.config_manager.get_transition_effect() # Add transition effect
+            "transition_effect": self.config_manager.get_transition_effect(),
+            "api_key": self.config_manager.get_api_key()
         }
         response_body = json.dumps(config)
         response = (
@@ -187,14 +201,22 @@ class AsyncWebServer:
         _, body = self.parse_request_body(request_lines)
         try:
             params = json.loads(body)
-            applet_duration = params.get("applet_duration", self.config_manager.defaults["applet_duration"])
-            timezone_offset = params.get("timezone_offset", self.config_manager.defaults["timezone_offset"])
-            transition_effect = params.get("transition_effect", self.config_manager.defaults["transition_effect"])
 
-            # Update the configs with settings
-            actual_duration = self.config_manager.set_applet_duration(applet_duration)
-            actual_offset = self.config_manager.set_timezone_offset(timezone_offset)
-            actual_transition = self.config_manager.set_transition_effect(transition_effect) # Update transition
+            # Only update fields that are explicitly provided in the request
+            if "applet_duration" in params:
+                self.config_manager.set_applet_duration(params["applet_duration"])
+            if "timezone_offset" in params:
+                self.config_manager.set_timezone_offset(params["timezone_offset"])
+            if "transition_effect" in params:
+                self.config_manager.set_transition_effect(params["transition_effect"])
+            if "api_key" in params:
+                self.config_manager.set_api_key(params["api_key"])
+
+            # Read back actual values for response
+            actual_duration = self.config_manager.get_applet_duration()
+            actual_offset = self.config_manager.get_timezone_offset()
+            actual_transition = self.config_manager.get_transition_effect()
+            actual_api_key = self.config_manager.get_api_key()
 
             print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}, transition={actual_transition}")
 
@@ -205,7 +227,8 @@ class AsyncWebServer:
                 json.dumps({
                     "applet_duration": actual_duration,
                     "timezone_offset": actual_offset,
-                    "transition_effect": actual_transition # Include transition in response
+                    "transition_effect": actual_transition,
+                    "api_key": actual_api_key
                 })
             )
         except Exception as e:
@@ -272,6 +295,56 @@ class AsyncWebServer:
         await writer.drain()
 
 
+
+    async def handle_health(self, request_lines, writer):
+        """Health check endpoint returning device status as JSON."""
+        import network
+        wlan = self.wifi_manager.wlan
+        connected = wlan.isconnected()
+
+        uptime_ms = time.ticks_diff(time.ticks_ms(), self._boot_ticks)
+        uptime_s = uptime_ms // 1000
+
+        reset_cause = machine.reset_cause()
+        RESET_CAUSES = {}
+        for attr in ("PWRON_RESET", "HARD_RESET", "WDT_RESET", "DEEPSLEEP_RESET", "SOFT_RESET"):
+            if hasattr(machine, attr):
+                RESET_CAUSES[getattr(machine, attr)] = attr.lower()
+        reset_reason = RESET_CAUSES.get(reset_cause, str(reset_cause))
+
+        wifi_info = {
+            "connected": connected,
+            "ip": self.wifi_manager.ip if connected else None,
+            "rssi": wlan.status('rssi') if connected else None,
+        }
+
+        current_applet_name = None
+        if self.applet_manager.current_applet:
+            try:
+                current_applet_name = self.applet_manager.current_applet.__class__.__name__
+            except Exception:
+                current_applet_name = "unknown"
+
+        enabled_count = len(self.applet_manager.applets) if hasattr(self.applet_manager, 'applets') else 0
+
+        payload = {
+            "status": "ok" if connected else "degraded",
+            "wifi": wifi_info,
+            "uptime_seconds": uptime_s,
+            "reset_reason": reset_reason,
+            "current_applet": current_applet_name,
+            "active_applets": enabled_count,
+            "free_memory": gc.mem_free(),
+        }
+
+        response_body = json.dumps(payload)
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Connection: close\r\n\r\n" + response_body
+        )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
 
     async def handle_reboot(self, request_lines, writer):
         response = (
@@ -553,15 +626,37 @@ class AsyncWebServer:
         <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
     </form>
 
+    <h2>API Security</h2>
+    <form id="api-key-form" style="max-width: 400px; margin: 0 auto; text-align: left;">
+        <label for="api-key" style="display: block; margin-bottom: 5px;">API Key (optional):</label>
+        <input type="password" id="api-key" name="api_key" placeholder="Leave empty for open access" style="text-transform: none;">
+        <p style="font-size: 12px; color: #ccc;">When set, all endpoints require <code>Authorization: Bearer &lt;key&gt;</code> header.</p>
+        <button type="submit" style="margin-top: 15px; width: 100%;">Save API Key</button>
+    </form>
+
     <button onclick="rebootDevice()" style="max-width: 400px; margin: 20px auto;">Reboot Device</button>
 
     <script>
 const serverIP = "{self.ip_address}";
 
+// Auth helper: attach stored API key to all fetch requests
+async function apiFetch(url, options = {{}}) {{
+  const apiKey = sessionStorage.getItem('api_key');
+  const headers = options.headers || {{}};
+  if (apiKey) {{
+    headers['Authorization'] = 'Bearer ' + apiKey;
+  }}
+  if (!headers['Content-Type'] && options.body) {{
+    headers['Content-Type'] = 'application/json';
+  }}
+  options.headers = headers;
+  return fetch(url, options);
+}}
+
 // Fetch and render saved Wi-Fi networks
 async function fetchNetworks() {{
   try {{
-    const response = await fetch(`http://${{serverIP}}/networks`);
+    const response = await apiFetch(`http://${{serverIP}}/networks`);
     if (response.ok) {{
       const networks = await response.json();
       const networksList = document.getElementById('networks-list');
@@ -620,7 +715,7 @@ async function fetchNetworks() {{
 // Fetch and render applets
 async function fetchApplets() {{
     try {{
-        const response = await fetch(`http://${{serverIP}}/applets`);
+        const response = await apiFetch(`http://${{serverIP}}/applets`);
         if (response.ok) {{
             const applets = await response.json();
             console.log('Fetched applets:', applets);  // Debug log
@@ -730,7 +825,7 @@ function saveAppletOrder() {{
     }}));
 
     // Get the original order of all applets
-    fetch(`http://${{serverIP}}/applets`)
+    apiFetch(`http://${{serverIP}}/applets`)
         .then(response => response.json())
         .then(originalApplets => {{
             // First add enabled applets in their current order
@@ -747,7 +842,7 @@ function saveAppletOrder() {{
             }});
             
             // Send the updated applets to the server
-            return fetch(`http://${{serverIP}}/select_applets`, {{
+            return apiFetch(`http://${{serverIP}}/select_applets`, {{
                 method: 'POST',
                 headers: {{'Content-Type': 'application/json'}},
                 body: JSON.stringify(applets)
@@ -769,7 +864,7 @@ function saveAppletOrder() {{
 // Fetch configuration
 async function fetchConfig() {{
   try {{
-    const response = await fetch(`http://${{serverIP}}/config`);
+    const response = await apiFetch(`http://${{serverIP}}/config`);
     if (response.ok) {{
       const config = await response.json();
       document.getElementById('applet-duration').value = config.applet_duration;
@@ -790,7 +885,7 @@ async function fetchConfig() {{
 // Fetch available transitions and populate dropdown
 async function fetchTransitions() {{
   try {{
-    const response = await fetch(`http://${{serverIP}}/transitions`);
+    const response = await apiFetch(`http://${{serverIP}}/transitions`);
     if (response.ok) {{
       const transitions = await response.json();
       const selectElement = document.getElementById('transition-effect');
@@ -814,7 +909,7 @@ async function fetchTransitions() {{
 // Move a network up or down
 async function moveNetwork(direction, index) {{
   try {{
-    const response = await fetch(`http://${{serverIP}}/move_${{direction}}`, {{
+    const response = await apiFetch(`http://${{serverIP}}/move_${{direction}}`, {{
       method: 'POST',
       headers: {{'Content-Type': 'application/json'}},
       body: JSON.stringify({{index}}),
@@ -831,7 +926,7 @@ async function moveNetwork(direction, index) {{
 
 async function rebootDevice() {{
     try {{
-        const response = await fetch(`http://${{serverIP}}/reboot`, {{
+        const response = await apiFetch(`http://${{serverIP}}/reboot`, {{
             method: 'POST',
         }});
         if (response.ok) {{
@@ -849,7 +944,7 @@ async function addNetwork(event) {{
   const data = Object.fromEntries(new FormData(form));
 
   try {{
-    const response = await fetch(`http://${{serverIP}}/submit`, {{
+    const response = await apiFetch(`http://${{serverIP}}/submit`, {{
       method: 'POST',
       headers: {{'Content-Type': 'application/json'}},
       body: JSON.stringify(data),
@@ -869,7 +964,7 @@ async function addNetwork(event) {{
 // Remove a network
 async function removeNetwork(index) {{
   try {{
-    const response = await fetch(`http://${{serverIP}}/remove`, {{
+    const response = await apiFetch(`http://${{serverIP}}/remove`, {{
       method: 'POST',
       headers: {{'Content-Type': 'application/json'}},
       body: JSON.stringify({{index}}),
@@ -894,7 +989,7 @@ async function saveApplets(event) {{
   }}));
 
   try {{
-    const response = await fetch(`http://${{serverIP}}/select_applets`, {{
+    const response = await apiFetch(`http://${{serverIP}}/select_applets`, {{
       method: 'POST',
       headers: {{'Content-Type': 'application/json'}},
       body: JSON.stringify(applets),
@@ -921,7 +1016,7 @@ async function saveConfig(event) {{
   }};
 
   try {{
-    const response = await fetch(`http://${{serverIP}}/update_config`, {{
+    const response = await apiFetch(`http://${{serverIP}}/update_config`, {{
       method: 'POST',
       headers: {{'Content-Type': 'application/json'}},
       body: JSON.stringify(data),
@@ -942,14 +1037,49 @@ async function saveConfig(event) {{
   }}
 }}
 
+document.getElementById('api-key-form').addEventListener('submit', async function(event) {{
+  event.preventDefault();
+  const apiKey = document.getElementById('api-key').value;
+  try {{
+    const response = await apiFetch(`http://${{serverIP}}/update_config`, {{
+      method: 'POST',
+      headers: {{'Content-Type': 'application/json'}},
+      body: JSON.stringify({{api_key: apiKey}})
+    }});
+    if (response.ok) {{
+      sessionStorage.setItem('api_key', apiKey);
+      alert('API key saved!');
+    }} else {{
+      alert('Failed to save API key');
+    }}
+  }} catch (error) {{
+    console.error('Error saving API key:', error);
+  }}
+}});
+
 // Attach handlers
 document.getElementById('wifi-form').addEventListener('submit', addNetwork);
 document.getElementById('config-form').addEventListener('submit', saveConfig);
 
-// Initial fetch
-fetchNetworks();
-fetchApplets();
-fetchTransitions(); // Fetch transitions first, then config sets the value
+// Initial fetch — load API key first, then fetch secured endpoints
+(async function init() {{
+  try {{
+    const response = await apiFetch(`http://${{serverIP}}/config`);
+    if (response.ok) {{
+      const config = await response.json();
+      document.getElementById('api-key').value = config.api_key || '';
+      if (config.api_key) {{
+        sessionStorage.setItem('api_key', config.api_key);
+      }} else {{
+        sessionStorage.removeItem('api_key');
+      }}
+    }}
+  }} catch (e) {{}}
+  // Now fetch everything with the key available in sessionStorage
+  fetchNetworks();
+  fetchApplets();
+  fetchTransitions();
+}})();
     </script>
     </body>
 
@@ -1006,6 +1136,24 @@ fetchTransitions(); // Fetch transitions first, then config sets the value
     #
     # -------------------- Request Handling --------------------
     #
+    def _check_auth(self, method, path, request_lines):
+        """Check API key authentication. Returns True if authorized."""
+        api_key = self.config_manager.get_api_key()
+        if not api_key:
+            return True  # No key configured = open access
+
+        route_key = f"{method} {path}"
+        if route_key in self._public_routes:
+            return True  # Public routes always allowed
+
+        # Extract Authorization header from request lines
+        for line in request_lines:
+            if line.lower().startswith("authorization:"):
+                token = line.split(":", 1)[1].strip()
+                if token == f"Bearer {api_key}":
+                    return True
+        return False
+
     async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
         try:
             # 1. Read request line
@@ -1055,11 +1203,22 @@ fetchTransitions(); // Fetch transitions first, then config sets the value
             # We need one \r\n between last header and body.
             full_request_b = request_line_b + b''.join(header_lines_b_list) + b'\r\n' + body_b
             full_request_s = full_request_b.decode('utf-8', 'ignore')
-            
-            print('[AsyncWebServer] Received request:\n', full_request_s) # Log the full reconstructed request
 
             # 5. Split into lines as expected by downstream logic
             request_lines_list = full_request_s.split("\r\n")
+
+            # Check authentication before route handling
+            if not self._check_auth(method, path, request_lines_list):
+                unauthorized = (
+                    "HTTP/1.1 401 Unauthorized\r\n"
+                    "Content-Type: application/json\r\n"
+                    "Connection: close\r\n\r\n"
+                    '{"error": "unauthorized"}'
+                )
+                writer.write(unauthorized.encode('utf-8'))
+                await writer.drain()
+                await writer.aclose()
+                return
 
             # Match the route using the parsed method and path from step 1
             handler = self.routes.get(f"{method} {path}")
