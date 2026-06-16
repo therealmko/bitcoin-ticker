@@ -54,6 +54,7 @@ class AsyncWebServer:
             "POST /update_config": self.handle_update_config,  # New route to update config
             "POST /reboot": self.handle_reboot,
             "GET /health": self.handle_health,
+            "POST /test_disconnect": self.handle_test_disconnect,
         }
         # Routes that don't require auth (unauthenticated access)
         self._public_routes = {
@@ -62,7 +63,7 @@ class AsyncWebServer:
             "GET /config",  # Settings page needs to read current config
             "POST /update_config",  # Settings page needs to save config (including API key removal)
         }
-        
+
     async def handle_root(self, request_lines, writer):
         gc.collect()
         html = self.web_page()
@@ -342,6 +343,18 @@ class AsyncWebServer:
             "HTTP/1.1 200 OK\r\n"
             "Content-Type: application/json\r\n"
             "Connection: close\r\n\r\n" + response_body
+        )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
+
+    async def handle_test_disconnect(self, request_lines, writer):
+        """Temporarily disconnect WiFi to test WiFiMonitor reconnect logic."""
+        self.wifi_manager.wlan.disconnect()
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Connection: close\r\n\r\n"
+            "WiFi disconnected. Monitor should reconnect within 30s."
         )
         writer.write(response.encode('utf-8'))
         await writer.drain()
