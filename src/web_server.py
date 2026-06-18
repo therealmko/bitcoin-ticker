@@ -2,6 +2,9 @@ from applet_manager import AppletManager
 import applet_manager
 import uasyncio as asyncio
 import json
+import machine
+import gc
+import time
 import wifi_manager  # Your custom WiFiManager module
 from config import ConfigManager  # Added import for ConfigManager
 
@@ -30,6 +33,7 @@ class AsyncWebServer:
         self.applet_manager = applet_manager
         self.config_manager = config_manager # Use the passed instance
         self.ip_address = self.wifi_manager.ip
+        self._boot_ticks = time.ticks_ms()
 
         # Remove instantiation here, use the passed instance
         # self.config_manager = ConfigManager()
@@ -50,9 +54,18 @@ class AsyncWebServer:
             "POST /update_config": self.handle_update_config,  # New route to update config
             "POST /reboot": self.handle_reboot,
             "POST /test_disconnect": self.handle_test_disconnect,
+            "GET /health": self.handle_health,
         }
-        
+        # Routes that don't require auth (unauthenticated access)
+        self._public_routes = {
+            "GET /",
+            "POST /submit",  # AP setup needs to add networks without auth
+            "GET /config",  # Settings page needs to read current config
+            "POST /update_config",  # Settings page needs to save config (including API key removal)
+        }
+
     async def handle_root(self, request_lines, writer):
+        gc.collect()
         html = self.web_page()
         response = (
             "HTTP/1.1 200 OK\r\n"
@@ -103,7 +116,8 @@ class AsyncWebServer:
         config = {
             "applet_duration": self.config_manager.get_applet_duration(),
             "timezone_offset": self.config_manager.get_timezone_offset(),
-            "transition_effect": self.config_manager.get_transition_effect() # Add transition effect
+            "transition_effect": self.config_manager.get_transition_effect(),
+            "api_key": self.config_manager.get_api_key()
         }
         response_body = json.dumps(config)
         response = (
@@ -188,14 +202,22 @@ class AsyncWebServer:
         _, body = self.parse_request_body(request_lines)
         try:
             params = json.loads(body)
-            applet_duration = params.get("applet_duration", self.config_manager.defaults["applet_duration"])
-            timezone_offset = params.get("timezone_offset", self.config_manager.defaults["timezone_offset"])
-            transition_effect = params.get("transition_effect", self.config_manager.defaults["transition_effect"])
 
-            # Update the configs with settings
-            actual_duration = self.config_manager.set_applet_duration(applet_duration)
-            actual_offset = self.config_manager.set_timezone_offset(timezone_offset)
-            actual_transition = self.config_manager.set_transition_effect(transition_effect) # Update transition
+            # Only update fields that are explicitly provided in the request
+            if "applet_duration" in params:
+                self.config_manager.set_applet_duration(params["applet_duration"])
+            if "timezone_offset" in params:
+                self.config_manager.set_timezone_offset(params["timezone_offset"])
+            if "transition_effect" in params:
+                self.config_manager.set_transition_effect(params["transition_effect"])
+            if "api_key" in params:
+                self.config_manager.set_api_key(params["api_key"])
+
+            # Read back actual values for response
+            actual_duration = self.config_manager.get_applet_duration()
+            actual_offset = self.config_manager.get_timezone_offset()
+            actual_transition = self.config_manager.get_transition_effect()
+            actual_api_key = self.config_manager.get_api_key()
 
             print(f"[AsyncWebServer] Updated config: duration={actual_duration}, tz={actual_offset}, transition={actual_transition}")
 
@@ -206,7 +228,8 @@ class AsyncWebServer:
                 json.dumps({
                     "applet_duration": actual_duration,
                     "timezone_offset": actual_offset,
-                    "transition_effect": actual_transition # Include transition in response
+                    "transition_effect": actual_transition,
+                    "api_key": actual_api_key
                 })
             )
         except Exception as e:
@@ -282,6 +305,56 @@ class AsyncWebServer:
             "Content-Type: text/plain\r\n"
             "Connection: close\r\n\r\n"
             "WiFi disconnected. Monitor should reconnect within 30s."
+        )
+        writer.write(response.encode('utf-8'))
+        await writer.drain()
+
+    async def handle_health(self, request_lines, writer):
+        """Health check endpoint returning device status as JSON."""
+        import network
+        wlan = self.wifi_manager.wlan
+        connected = wlan.isconnected()
+
+        uptime_ms = time.ticks_diff(time.ticks_ms(), self._boot_ticks)
+        uptime_s = uptime_ms // 1000
+
+        reset_cause = machine.reset_cause()
+        RESET_CAUSES = {}
+        for attr in ("PWRON_RESET", "HARD_RESET", "WDT_RESET", "DEEPSLEEP_RESET", "SOFT_RESET"):
+            if hasattr(machine, attr):
+                RESET_CAUSES[getattr(machine, attr)] = attr.lower()
+        reset_reason = RESET_CAUSES.get(reset_cause, str(reset_cause))
+
+        wifi_info = {
+            "connected": connected,
+            "ip": self.wifi_manager.ip if connected else None,
+            "rssi": wlan.status('rssi') if connected else None,
+        }
+
+        current_applet_name = None
+        if self.applet_manager.current_applet:
+            try:
+                current_applet_name = self.applet_manager.current_applet.__class__.__name__
+            except Exception:
+                current_applet_name = "unknown"
+
+        enabled_count = len(self.applet_manager.applets) if hasattr(self.applet_manager, 'applets') else 0
+
+        payload = {
+            "status": "ok" if connected else "degraded",
+            "wifi": wifi_info,
+            "uptime_seconds": uptime_s,
+            "reset_reason": reset_reason,
+            "current_applet": current_applet_name,
+            "active_applets": enabled_count,
+            "free_memory": gc.mem_free(),
+        }
+
+        response_body = json.dumps(payload)
+        response = (
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: application/json\r\n"
+            "Connection: close\r\n\r\n" + response_body
         )
         writer.write(response.encode('utf-8'))
         await writer.drain()
@@ -382,6 +455,24 @@ class AsyncWebServer:
         self.applet_manager.update_applets(selected_applets)
 
     #
+    def _check_auth(self, method, path, request_lines):
+        """Check API key authentication. Returns True if authorized."""
+        api_key = self.config_manager.get_api_key()
+        if not api_key:
+            return True  # No key configured = open access
+
+        route_key = f"{method} {path}"
+        if route_key in self._public_routes:
+            return True  # Public routes always allowed
+
+        # Extract Authorization header from request lines
+        for line in request_lines:
+            if line.lower().startswith("authorization:"):
+                token = line.split(":", 1)[1].strip()
+                if token == f"Bearer {api_key}":
+                    return True
+        return False
+
     # -------------------- Request Handling --------------------
     #
     async def handle_client(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -438,6 +529,19 @@ class AsyncWebServer:
 
             # 5. Split into lines as expected by downstream logic
             request_lines_list = full_request_s.split("\r\n")
+
+            # Check authentication before route handling
+            if not self._check_auth(method, path, request_lines_list):
+                unauthorized = (
+                    "HTTP/1.1 401 Unauthorized\r\n"
+                    "Content-Type: application/json\r\n"
+                    "Connection: close\r\n\r\n"
+                    '{"error": "unauthorized"}'
+                )
+                writer.write(unauthorized.encode('utf-8'))
+                await writer.drain()
+                await writer.aclose()
+                return
 
             # Match the route using the parsed method and path from step 1
             handler = self.routes.get(f"{method} {path}")

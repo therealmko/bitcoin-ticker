@@ -240,6 +240,10 @@
     <input type="number" id="timezone-offset" name="timezone_offset" min="-12" max="14" step="1" value="{{TIMEZONE_OFFSET}}" required>
     <p style="font-size: 12px; color: #ccc;">Valid values between -12 and +14</p>
 
+    <label for="api-key" style="display: block; margin-top: 15px; margin-bottom: 5px;">API Key (optional):</label>
+    <input type="password" id="api-key" name="api_key" placeholder="Leave empty for open access" style="text-transform: none;">
+    <p style="font-size: 12px; color: #ccc;">When set, all endpoints require <code>Authorization: Bearer &lt;key&gt;</code> header.</p>
+
     <button type="submit" style="margin-top: 15px; width: 100%;">Save Configuration</button>
 </form>
 
@@ -247,6 +251,16 @@
 
 <script>
 const serverIP = "{{SERVER_IP}}";
+
+// API key auth helper
+function apiFetch(url, options = {}) {
+  const apiKey = sessionStorage.getItem('api_key');
+  if (apiKey) {
+    if (!options.headers) options.headers = {};
+    options.headers['Authorization'] = 'Bearer ' + apiKey;
+  }
+  return fetch(url, options);
+}
 
 // Fetch and render saved Wi-Fi networks
 async function fetchNetworks() {
@@ -469,6 +483,13 @@ async function fetchConfig() {
       if (transitionSelect) {
           transitionSelect.value = config.transition_effect;
       }
+      // Load API key
+      document.getElementById('api-key').value = config.api_key || '';
+      if (config.api_key) {
+        sessionStorage.setItem('api_key', config.api_key);
+      } else {
+        sessionStorage.removeItem('api_key');
+      }
     } else {
       alert('Failed to fetch configuration');
     }
@@ -623,6 +644,14 @@ async function saveConfig(event) {
       document.getElementById('applet-duration').value = result.applet_duration;
       document.getElementById('timezone-offset').value = result.timezone_offset;
       document.getElementById('transition-effect').value = result.transition_effect;
+      // Handle API key in response
+      if (result.api_key) {
+        sessionStorage.setItem('api_key', result.api_key);
+        document.getElementById('api-key').value = result.api_key;
+      } else {
+        sessionStorage.removeItem('api_key');
+        document.getElementById('api-key').value = '';
+      }
       alert('Configuration saved successfully!');
     } else {
       alert('Failed to save configuration');
