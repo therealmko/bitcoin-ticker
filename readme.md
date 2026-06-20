@@ -87,6 +87,80 @@ You can print the enclosure yourself! It's straightforward. Choose between the 2
 ### Laser Cutting Instructions
 The most difficult part to complete at home. All necessary files and measurements are available in the assets folder. My recommendation is to locate a laser cutting service in your area or place an order online. You'll need translucent black acrylic with 3mm thickness. While the sticker adds a nice finishing touch, it's optional rather than required.
 
+## 🩺 Health Check API
+
+The ticker exposes a `GET /health` endpoint that returns real-time device status as JSON. This is useful for monitoring, home automation integrations, or debugging.
+
+### Request
+```bash
+curl http://<ticker-ip>/health
+```
+
+### Response
+```json
+{
+  "status": "ok",
+  "wifi": {
+    "connected": true,
+    "ip": "192.168.1.23",
+    "rssi": -56
+  },
+  "uptime_seconds": 265,
+  "reset_reason": "pwron_reset",
+  "current_applet": "dominance_applet",
+  "active_applets": 6,
+  "free_memory": 93936
+}
+```
+
+### Fields
+- **status:** `"ok"` if WiFi is connected, `"degraded"` otherwise
+- **wifi:** connection state, IP address, and signal strength (RSSI in dBm)
+- **uptime_seconds:** time since last boot
+- **reset_reason:** why the device last restarted (e.g. `pwron_reset`, `soft_reset`, `wdt_reset`)
+- **current_applet:** the applet currently displayed
+- **active_applets:** number of enabled applets
+- **free_memory:** available RAM in bytes
+
+## 🔐 API Key Authentication (Optional)
+
+You can protect all API endpoints with an API key. When configured, every request (except public routes) must include a valid `Authorization: Bearer <key>` header.
+
+### Setup
+1. Open the ticker's settings page in your browser
+2. Enter an API key in the **API Key** field (leave empty for open access)
+3. Click **Save Configuration**
+
+### Usage
+```bash
+curl -H "Authorization: Bearer my-secret-key" http://<ticker-ip>/health
+curl -H "Authorization: Bearer my-secret-key" http://<ticker-ip>/config
+```
+
+### Public Routes (always accessible without auth)
+- `GET /` — settings page
+- `POST /submit` — WiFi network setup (access point mode)
+- `GET /config` — read configuration
+- `POST /update_config` — save configuration (including API key changes)
+
+Without an API key set, all endpoints are open. This makes it easy to get started — add authentication only when you need it.
+
+## 📶 WiFi Monitor
+
+The ticker includes an automatic WiFi monitor that detects disconnections and reconnects without a reboot. It uses exponential backoff to avoid hammering the network.
+
+### How It Works
+- Monitors WiFi connection state continuously
+- On disconnect: attempts reconnect with increasing intervals (30s, 60s, 120s…)
+- Resyncs NTP time after reconnect
+- Restores applet cycling automatically
+
+### Test It
+```bash
+curl -X POST http://<ticker-ip>/test_disconnect
+```
+The WiFi will disconnect and the monitor should reconnect within ~30 seconds. Check the serial output for `[WiFiMonitor]` log messages.
+
 ## 🔨 Development
 ### Project Structure
 ```
